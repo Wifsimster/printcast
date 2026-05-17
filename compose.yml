@@ -1,0 +1,38 @@
+name: printcast
+
+services:
+  printcast:
+    build: .
+    container_name: printcast
+    restart: unless-stopped
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      # The slim image has no curl; probe /health with the stdlib instead.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health', timeout=5).status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - lan
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.printcast.rule=Host(`printcast.battistella.ovh`)"
+      - "traefik.http.routers.printcast.entrypoints=websecure"
+      - "traefik.http.routers.printcast.tls=true"
+      - "traefik.http.services.printcast.loadbalancer.server.port=8080"
+
+networks:
+  lan:
+    external: true
