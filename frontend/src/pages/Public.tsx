@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { AppFooter } from "@/components/AppFooter";
 
 const CANVAS_WIDTH = 512;
 const CANVAS_HEIGHT = 384;
@@ -30,7 +31,7 @@ export function Public() {
   const signedIn = Boolean(me);
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="flex h-16 items-center justify-between border-b bg-background px-6">
         <div className="flex items-center gap-2">
           <Printer className="h-5 w-5 text-primary" />
@@ -46,7 +47,7 @@ export function Public() {
         </Button>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-6 p-6">
+      <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Print something</h1>
           <p className="text-sm text-muted-foreground">
@@ -75,6 +76,8 @@ export function Public() {
           </CardContent>
         </Card>
       </main>
+
+      <AppFooter />
     </div>
   );
 }
