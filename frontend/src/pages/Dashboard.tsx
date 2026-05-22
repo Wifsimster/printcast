@@ -176,16 +176,16 @@ export function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/test">{t("dashboard.actionCustomPrint")}</Link>
+              <Link to="/admin/test">{t("dashboard.actionCustomPrint")}</Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/analytics">{t("dashboard.actionOpenAnalytics")}</Link>
+              <Link to="/admin/analytics">{t("dashboard.actionOpenAnalytics")}</Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/jobs">{t("dashboard.actionInspectJobs")}</Link>
+              <Link to="/admin/jobs">{t("dashboard.actionInspectJobs")}</Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/settings">{t("dashboard.actionEditConfig")}</Link>
+              <Link to="/admin/settings">{t("dashboard.actionEditConfig")}</Link>
             </Button>
           </CardContent>
         </Card>

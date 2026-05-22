@@ -20,16 +20,18 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional
 from zoneinfo import ZoneInfo
 
+import httpx
 import requests
 import uvicorn
 from escpos.printer import Network
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Response
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
@@ -87,6 +89,11 @@ CONFIG: dict[str, Any] = {
     "setup_completed": False,
 }
 CONFIG_LOCK = threading.Lock()
+
+# The better-auth sidecar runs as a separate process inside the container.
+# FastAPI reverse-proxies /api/auth/* to it and validates session cookies via
+# the sidecar's /__auth/whoami helper endpoint.
+AUTH_INTERNAL_URL = os.environ.get("PRINTCAST_AUTH_URL", "http://127.0.0.1:8090")
 
 
 def _load_persisted_config() -> None:
@@ -432,6 +439,9 @@ class SetupPayload(BaseModel):
     printer_timeout: int = 20
     printer_retries: int = 3
     tz: str = "Europe/Paris"
+    admin_email: str
+    admin_password: str
+    admin_name: Optional[str] = None
 
 
 class ConfigUpdate(BaseModel):
@@ -548,7 +558,9 @@ def render_test(p: Network) -> None:
 # --------------------------------------------------------------------------
 # Auth
 # --------------------------------------------------------------------------
-def require_auth(authorization: Optional[str] = Header(default=None)) -> None:
+def _require_bearer(authorization: Optional[str] = Header(default=None)) -> dict:
+    """Bearer-token gate for machine-to-machine webhook callers (n8n, HA,
+    ntfy). The admin UI uses session cookies instead — see require_session."""
     token = CONFIG.get("printer_token", "")
     if not token:
         raise HTTPException(status_code=500,
@@ -558,13 +570,71 @@ def require_auth(authorization: Optional[str] = Header(default=None)) -> None:
     if not hmac.compare_digest(provided, expected):
         raise HTTPException(status_code=401,
                             detail="missing or invalid bearer token")
+    return {"username": "webhook", "role": "service", "auth": "bearer"}
 
 
-def _admin_required_when_setup(authorization: Optional[str] = Header(default=None)) -> None:
-    """Admin endpoints: open before setup is complete, bearer-protected after."""
+def require_session(request: Request) -> dict:
+    """Validate the better-auth session cookie by calling the sidecar's
+    /__auth/whoami. Returns {id, email, name, role}."""
+    cookie = request.headers.get("cookie", "")
+    if not cookie:
+        raise HTTPException(status_code=401, detail="not authenticated")
+    try:
+        r = requests.get(f"{AUTH_INTERNAL_URL}/__auth/whoami",
+                         headers={"cookie": cookie},
+                         timeout=5)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=503,
+                            detail=f"auth service unreachable: {exc}") from exc
+    if r.status_code == 401:
+        raise HTTPException(status_code=401, detail="not authenticated")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="auth service error")
+    user = r.json().get("user") or {}
+    user["auth"] = "session"
+    return user
+
+
+def require_admin(user: dict = Depends(require_session)) -> dict:
+    """Gate admin-only routes (settings, analytics, test print)."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403,
+                            detail="admin role required")
+    return user
+
+
+def require_admin_or_bearer(
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+) -> dict:
+    """Accept either a logged-in admin (session cookie) or the shared bearer
+    token. Used by /print/* endpoints so the admin UI and machine callers can
+    both trigger prints."""
+    if authorization:
+        return _require_bearer(authorization)
+    return require_admin(require_session(request))
+
+
+def _effective_setup_completed() -> bool:
+    """True only when persisted config says so AND the auth sidecar has a user.
+    Mirrors the funnel-back-to-wizard logic in /api/setup/status so the wizard
+    endpoints stay open whenever the wizard is being shown."""
     if not CONFIG.get("setup_completed"):
+        return False
+    try:
+        r = requests.get(f"{AUTH_INTERNAL_URL}/__auth/has-users", timeout=3)
+        if r.status_code == 200 and not r.json().get("has_users"):
+            return False
+    except requests.RequestException:
+        pass
+    return True
+
+
+def _admin_required_when_setup(request: Request) -> None:
+    """Wizard endpoints: open before setup is complete, session-protected after."""
+    if not _effective_setup_completed():
         return
-    require_auth(authorization)
+    require_admin(require_session(request))
 
 
 def _request_source(request: Request) -> Optional[str]:
@@ -623,7 +693,7 @@ def health() -> dict:
 
 
 @app.get("/discover")
-def discover(_: None = Depends(require_auth)) -> dict:
+def discover(_: dict = Depends(_require_bearer)) -> dict:
     """List printer candidates currently reachable on the LAN."""
     port = int(CONFIG["printer_port"])
     candidates = discover_printers(port=port)
@@ -651,8 +721,7 @@ def metrics() -> PlainTextResponse:
 # Print endpoints
 # --------------------------------------------------------------------------
 @app.post("/print/text")
-def print_text(job: TextJob, request: Request,
-               _: None = Depends(require_auth)) -> dict:
+def print_text(job: TextJob, request: Request) -> dict:
     run_print_job("text", lambda p: render_text(p, job),
                   source=_request_source(request),
                   summary=_summarize_payload(job))
@@ -661,7 +730,7 @@ def print_text(job: TextJob, request: Request,
 
 @app.post("/print/receipt")
 def print_receipt(job: ReceiptJob, request: Request,
-                  _: None = Depends(require_auth)) -> dict:
+                  _: dict = Depends(_require_bearer)) -> dict:
     run_print_job("receipt", lambda p: render_receipt(p, job),
                   source=_request_source(request),
                   summary=_summarize_payload(job))
@@ -669,8 +738,7 @@ def print_receipt(job: ReceiptJob, request: Request,
 
 
 @app.post("/print/image")
-def print_image(job: ImageJob, request: Request,
-                _: None = Depends(require_auth)) -> dict:
+def print_image(job: ImageJob, request: Request) -> dict:
     try:
         img = load_image(job.image)
     except Exception as exc:
@@ -685,7 +753,7 @@ def print_image(job: ImageJob, request: Request,
 
 @app.post("/print")
 def print_generic(job: GenericJob, request: Request,
-                  _: None = Depends(require_auth)) -> dict:
+                  _: dict = Depends(_require_bearer)) -> dict:
     if not any([job.text, job.title, job.qr, job.barcode, job.image]):
         raise HTTPException(
             status_code=400,
@@ -704,7 +772,7 @@ def print_generic(job: GenericJob, request: Request,
 
 
 @app.post("/print/test")
-def print_test(request: Request, _: None = Depends(require_auth)) -> dict:
+def print_test(request: Request, _: dict = Depends(require_admin)) -> dict:
     run_print_job("test", render_test,
                   source=_request_source(request), summary="test")
     return {"status": "printed", "job": "test"}
@@ -731,7 +799,7 @@ def _public_config() -> dict[str, Any]:
 @app.get("/api/setup/status")
 def setup_status() -> dict:
     return {
-        "setup_completed": bool(CONFIG.get("setup_completed")),
+        "setup_completed": _effective_setup_completed(),
         "has_token": bool(CONFIG.get("printer_token")),
         "has_host": bool(CONFIG.get("printer_host")),
     }
@@ -749,9 +817,44 @@ def test_connection(payload: TestConnectionPayload,
     return {"reachable": reachable, "host": payload.printer_host, "port": payload.printer_port}
 
 
+@app.post("/api/setup/discover")
+def setup_discover(_: None = Depends(_admin_required_when_setup)) -> dict:
+    """Run printer auto-discovery during first-run setup (no token required)."""
+    port = int(CONFIG.get("printer_port") or 9100)
+    candidates = discover_printers(port=port, mdns_timeout=3.0, scan_timeout=0.4)
+    for c in candidates:
+        c["reachable"] = tcp_reachable(c["host"], c["port"], timeout=1.5)
+    return {"port": port, "candidates": candidates}
+
+
 @app.post("/api/setup/complete")
 def setup_complete(payload: SetupPayload,
                    _: None = Depends(_admin_required_when_setup)) -> dict:
+    # Create the first user in the auth sidecar BEFORE persisting setup state,
+    # so a sidecar failure doesn't leave the deploy half-configured.
+    try:
+        r = requests.post(
+            f"{AUTH_INTERNAL_URL}/__auth/bootstrap-admin",
+            json={
+                "email": payload.admin_email.strip(),
+                "password": payload.admin_password,
+                "name": (payload.admin_name or payload.admin_email).strip(),
+            },
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=503,
+                            detail=f"auth service unreachable: {exc}") from exc
+    if r.status_code == 409:
+        raise HTTPException(status_code=409,
+                            detail="an admin user already exists")
+    if r.status_code != 200:
+        try:
+            detail = r.json().get("error", r.text)
+        except Exception:
+            detail = r.text
+        raise HTTPException(status_code=400, detail=f"signup failed: {detail}")
+
     with CONFIG_LOCK:
         CONFIG["printer_host"] = payload.printer_host.strip()
         CONFIG["printer_port"] = int(payload.printer_port)
@@ -762,17 +865,24 @@ def setup_complete(payload: SetupPayload,
         CONFIG["tz"] = payload.tz.strip() or "Europe/Paris"
         CONFIG["setup_completed"] = True
         _save_persisted_config()
-    log("setup.completed", host=CONFIG["printer_host"], port=CONFIG["printer_port"])
+    log("setup.completed",
+        host=CONFIG["printer_host"], port=CONFIG["printer_port"],
+        admin_email=payload.admin_email.strip())
     return {"status": "ok", "config": _public_config()}
 
 
+@app.get("/api/me")
+def get_me(user: dict = Depends(require_session)) -> dict:
+    return user
+
+
 @app.get("/api/config")
-def get_config(_: None = Depends(require_auth)) -> dict:
+def get_config(_: dict = Depends(require_admin)) -> dict:
     return _public_config()
 
 
 @app.put("/api/config")
-def update_config(payload: ConfigUpdate, _: None = Depends(require_auth)) -> dict:
+def update_config(payload: ConfigUpdate, _: dict = Depends(require_admin)) -> dict:
     with CONFIG_LOCK:
         data = payload.model_dump(exclude_none=True)
         for key, value in data.items():
@@ -788,7 +898,7 @@ def update_config(payload: ConfigUpdate, _: None = Depends(require_auth)) -> dic
 
 @app.get("/api/jobs")
 def list_jobs(limit: int = 100, status: Optional[str] = None,
-              _: None = Depends(require_auth)) -> dict:
+              _: dict = Depends(require_admin)) -> dict:
     limit = max(1, min(int(limit), 500))
     query = "SELECT id, ts, job_type, status, duration_ms, attempts, error, source, payload_summary FROM jobs"
     params: list[Any] = []
@@ -803,7 +913,7 @@ def list_jobs(limit: int = 100, status: Optional[str] = None,
 
 
 @app.get("/api/analytics/summary")
-def analytics_summary(_: None = Depends(require_auth)) -> dict:
+def analytics_summary(_: dict = Depends(require_admin)) -> dict:
     now = time.time()
     cutoff_24h = now - 86400
     cutoff_7d = now - 7 * 86400
@@ -851,7 +961,7 @@ def analytics_summary(_: None = Depends(require_auth)) -> dict:
 
 @app.get("/api/analytics/timeseries")
 def analytics_timeseries(hours: int = 24,
-                         _: None = Depends(require_auth)) -> dict:
+                         _: dict = Depends(require_admin)) -> dict:
     hours = max(1, min(int(hours), 24 * 30))
     bucket_seconds = 3600 if hours <= 48 else 86400
     now = time.time()
@@ -877,6 +987,46 @@ def analytics_timeseries(hours: int = 24,
         })
         bucket += bucket_seconds
     return {"series": series, "bucket_seconds": bucket_seconds}
+
+
+# --------------------------------------------------------------------------
+# Reverse proxy: /api/auth/* -> better-auth sidecar
+# --------------------------------------------------------------------------
+# Better-auth runs as a sibling Node process inside the container so the
+# browser sees a single origin. httpx (not requests) is used because it
+# preserves multiple Set-Cookie headers — important for sign-in responses.
+_PROXY_STRIP_REQ_HEADERS = {"host", "content-length"}
+_PROXY_STRIP_RES_HEADERS = {"content-encoding", "transfer-encoding",
+                            "connection", "keep-alive"}
+
+
+@app.api_route("/api/auth/{path:path}",
+               methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+async def auth_proxy(path: str, request: Request) -> Response:
+    headers = [(k, v) for k, v in request.headers.raw
+               if k.lower().decode() not in _PROXY_STRIP_REQ_HEADERS]
+    body = await request.body()
+    url = f"{AUTH_INTERNAL_URL}/api/auth/{path}"
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            r = await client.request(
+                request.method, url,
+                params=dict(request.query_params),
+                content=body,
+                headers={k.decode(): v.decode() for k, v in headers},
+            )
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=503,
+                                detail=f"auth service unreachable: {exc}") from exc
+    response = Response(content=r.content, status_code=r.status_code)
+    # Preserve multiple Set-Cookie headers (Response()'s dict init would
+    # collapse them). We bypass the init by replacing raw_headers wholesale.
+    response.raw_headers = [
+        (k.encode(), v.encode())
+        for k, v in r.headers.multi_items()
+        if k.lower() not in _PROXY_STRIP_RES_HEADERS
+    ]
+    return response
 
 
 # --------------------------------------------------------------------------

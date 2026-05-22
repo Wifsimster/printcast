@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import {
   Activity,
   BarChart3,
+  Brush,
   Globe,
+  Home,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -15,25 +17,38 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { clearToken, endpoints, getToken, HealthResponse } from "@/lib/api";
+import { endpoints, HealthResponse } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
+
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  end?: boolean;
+  adminOnly?: boolean;
+};
 
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const { me, loading: authLoading, signOut } = useAuth();
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
-  const nav = [
-    { to: "/", label: t("nav.dashboard"), icon: LayoutDashboard },
-    { to: "/analytics", label: t("nav.analytics"), icon: BarChart3 },
-    { to: "/jobs", label: t("nav.jobs"), icon: ListChecks },
-    { to: "/test", label: t("nav.testPrint"), icon: TestTube2 },
-    { to: "/settings", label: t("nav.settings"), icon: SettingsIcon },
+  const nav: NavItem[] = [
+    { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, end: true },
+    { to: "/admin/analytics", label: t("nav.analytics"), icon: BarChart3, adminOnly: true },
+    { to: "/admin/jobs", label: t("nav.jobs"), icon: ListChecks },
+    { to: "/admin/draw", label: t("nav.draw"), icon: Brush },
+    { to: "/admin/test", label: t("nav.testPrint"), icon: TestTube2, adminOnly: true },
+    { to: "/admin/settings", label: t("nav.settings"), icon: SettingsIcon, adminOnly: true },
   ];
+  const visibleNav = nav.filter((item) => !item.adminOnly || me?.role === "admin");
 
   useEffect(() => {
-    if (!getToken()) {
+    if (authLoading) return;
+    if (!me) {
       navigate("/login", { replace: true });
       return;
     }
@@ -49,7 +64,7 @@ export function Layout() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, authLoading, me]);
 
   const currentLang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
@@ -61,11 +76,11 @@ export function Layout() {
           <span className="text-lg font-semibold tracking-tight">printcast</span>
         </div>
         <nav className="flex-1 space-y-1 p-3">
-          {nav.map((item) => (
+          {visibleNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === "/"}
+              end={item.end}
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -81,6 +96,14 @@ export function Layout() {
           ))}
         </nav>
         <div className="border-t p-3 space-y-2">
+          {me ? (
+            <div
+              className="px-3 pb-1 text-xs text-muted-foreground truncate"
+              title={me.email}
+            >
+              {me.email}
+            </div>
+          ) : null}
           <div className="flex items-center gap-2 px-1">
             <Globe className="h-4 w-4 text-muted-foreground" />
             <select
@@ -100,9 +123,17 @@ export function Layout() {
             variant="ghost"
             size="sm"
             className="w-full justify-start"
-            onClick={() => {
-              clearToken();
-              navigate("/login", { replace: true });
+            onClick={() => navigate("/")}
+          >
+            <Home className="mr-2 h-4 w-4" /> {t("nav.publicPage")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+            onClick={async () => {
+              await signOut();
+              navigate("/", { replace: true });
             }}
           >
             <LogOut className="mr-2 h-4 w-4" /> {t("common.signOut")}
@@ -129,11 +160,11 @@ export function Layout() {
             )}
           </div>
           <nav className="flex gap-1 md:hidden">
-            {nav.map((item) => (
+            {visibleNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === "/"}
+                end={item.end}
                 className={({ isActive }) =>
                   cn(
                     "rounded-md p-2",

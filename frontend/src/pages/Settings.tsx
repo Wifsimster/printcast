@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ApiError, ConfigResponse, endpoints, setToken } from "@/lib/api";
+import { ApiError, ConfigResponse, endpoints } from "@/lib/api";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 export function Settings() {
@@ -82,7 +82,6 @@ export function Settings() {
     try {
       const result = await endpoints.updateConfig({ printer_token: token });
       setConfig(result.config);
-      setToken(token);
       setNewToken("");
       toast.success(t("settings.tokenRotated"));
     } catch (err) {

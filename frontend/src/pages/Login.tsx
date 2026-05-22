@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Printer, KeyRound, Loader2 } from "lucide-react";
+import { Printer, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Card,
@@ -13,26 +13,35 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { endpoints, setToken } from "@/lib/api";
+import { ApiError, endpoints } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 export function Login() {
   const { t } = useTranslation();
-  const [token, setTokenValue] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { refresh } = useAuth();
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!token.trim()) return;
+    if (!email.trim() || !password) return;
     setSubmitting(true);
-    setToken(token.trim());
     try {
-      await endpoints.config();
+      await endpoints.signIn(email.trim(), password);
+      await refresh();
       toast.success(t("login.signedIn"));
-      navigate("/", { replace: true });
-    } catch {
-      setToken("");
-      toast.error(t("login.invalidToken"));
+      navigate("/admin", { replace: true });
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.status === 401
+            ? t("login.invalidCredentials")
+            : err.message
+          : t("login.failed");
+      toast.error(msg);
+      setPassword("");
     } finally {
       setSubmitting(false);
     }
@@ -51,21 +60,33 @@ export function Login() {
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="token">{t("login.tokenLabel")}</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
-                id="token"
-                type="password"
+                id="email"
+                type="email"
+                autoComplete="email"
                 autoFocus
-                placeholder={t("login.tokenPlaceholder")}
-                value={token}
-                onChange={(e) => setTokenValue(e.target.value)}
+                placeholder={t("login.emailPlaceholder")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("login.password")}</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder={t("login.passwordPlaceholder")}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <KeyRound className="mr-2 h-4 w-4" />
+                <LogIn className="mr-2 h-4 w-4" />
               )}
               {t("common.signIn")}
             </Button>
