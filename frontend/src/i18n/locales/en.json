@@ -257,6 +257,8 @@
     "cannotReachTitle": "Cannot reach the printer",
     "cannotReachDesc": "You can still save and finish setup. The service will keep retrying when print requests come in. Check the host/port and any firewall or VLAN restrictions on port 9100.",
     "rerunProbe": "Re-run probe",
+    "openPrinterWebUI": "Open printer web UI",
+    "openPrinterWebUIHint": "Use the open icon to load the printer's manufacturer web UI in a new tab (port 80) — handy to find or change the IP.",
     "doneTitle": "Ready to print",
     "doneDesc": "Review the summary, then save the configuration. The service stores it in /app/data and applies it immediately — no restart needed.",
     "summaryPrinter": "Printer",
