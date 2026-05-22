@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { Eraser, Loader2, Pencil, Printer, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +29,7 @@ type Point = { x: number; y: number };
 type Stroke = { points: Point[]; size: number; erase: boolean };
 
 export function Draw() {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const strokesRef = useRef<Stroke[]>([]);
@@ -136,9 +138,9 @@ export function Draw() {
         caption: caption.trim() || undefined,
         cut: true,
       });
-      toast.success("Dessert envoyé à l'imprimante");
+      toast.success(t("draw.sent"));
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Échec de l'impression");
+      toast.error(err instanceof ApiError ? err.message : t("draw.failed"));
     } finally {
       setBusy(false);
     }
@@ -159,18 +161,14 @@ export function Draw() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Dessine ton dessert</h1>
-        <p className="text-sm text-muted-foreground">
-          Croque ton dessert au doigt et envoie-le direct sur l'imprimante thermique.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("draw.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("draw.description")}</p>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Atelier pâtisserie</CardTitle>
-          <CardDescription>
-            Trait noir sur fond blanc — c'est ce qui rend le mieux en thermique 80&nbsp;mm.
-          </CardDescription>
+          <CardTitle>{t("draw.cardTitle")}</CardTitle>
+          <CardDescription>{t("draw.cardDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -180,7 +178,7 @@ export function Draw() {
               variant={erase ? "outline" : "default"}
               onClick={() => setErase(false)}
             >
-              <Pencil className="mr-2 h-4 w-4" /> Crayon
+              <Pencil className="mr-2 h-4 w-4" /> {t("draw.pencil")}
             </Button>
             <Button
               type="button"
@@ -188,7 +186,7 @@ export function Draw() {
               variant={erase ? "default" : "outline"}
               onClick={() => setErase(true)}
             >
-              <Eraser className="mr-2 h-4 w-4" /> Gomme
+              <Eraser className="mr-2 h-4 w-4" /> {t("draw.eraser")}
             </Button>
 
             <div className="mx-2 hidden h-6 w-px bg-border sm:block" />
@@ -198,7 +196,7 @@ export function Draw() {
                 <button
                   key={s}
                   type="button"
-                  aria-label={`Pinceau ${s}px`}
+                  aria-label={t("draw.brushAria", { size: s })}
                   onClick={() => setBrush(s)}
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-md border transition-colors",
@@ -226,7 +224,7 @@ export function Draw() {
                 onClick={undo}
                 disabled={strokesRef.current.length === 0}
               >
-                <RotateCcw className="mr-2 h-4 w-4" /> Annuler
+                <RotateCcw className="mr-2 h-4 w-4" /> {t("draw.undo")}
               </Button>
               <Button
                 type="button"
@@ -235,7 +233,7 @@ export function Draw() {
                 onClick={clear}
                 disabled={!hasInk && strokesRef.current.length === 0}
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Effacer
+                <Trash2 className="mr-2 h-4 w-4" /> {t("draw.clearAction")}
               </Button>
             </div>
           </div>
@@ -259,12 +257,12 @@ export function Draw() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="caption">Petit mot (optionnel)</Label>
+            <Label htmlFor="caption">{t("draw.caption")}</Label>
             <Input
               id="caption"
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="Tarte au citron pour Camille"
+              placeholder={t("draw.captionPlaceholder")}
               maxLength={80}
             />
           </div>
@@ -276,7 +274,7 @@ export function Draw() {
               ) : (
                 <Printer className="mr-2 h-4 w-4" />
               )}
-              Imprimer mon dessert
+              {t("draw.print")}
             </Button>
           </div>
         </CardContent>
