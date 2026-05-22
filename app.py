@@ -35,6 +35,8 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pydantic import BaseModel, Field
 
+from discovery import discover_printers
+
 
 # --------------------------------------------------------------------------
 # Configuration
@@ -46,12 +48,26 @@ def _int_env(name: str, default: int) -> int:
         return default
 
 
+def _bool_env(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 SERVICE_NAME = "printcast"
 DATA_DIR = Path(os.environ.get("PRINTCAST_DATA_DIR", "/app/data"))
 CONFIG_FILE = DATA_DIR / "config.json"
 DB_FILE = DATA_DIR / "printcast.db"
 FRONTEND_DIR = Path(os.environ.get("PRINTCAST_FRONTEND_DIR",
                                    str(Path(__file__).parent / "frontend" / "dist")))
+# Auto-detect a printer at startup when no host is configured. Disable when you
+# need deterministic behavior (e.g. tests) by setting PRINTER_AUTODETECT=false.
+PRINTER_AUTODETECT = _bool_env("PRINTER_AUTODETECT", True)
+
+# Populated when the host comes from auto-detection rather than the env var,
+# so /health can advertise how it found the printer.
+PRINTER_DISCOVERY: Optional[dict] = None
 
 LINE_WIDTH = 48          # 72mm print area at 203 dpi
 MAX_IMG_WIDTH = 512      # dots; images wider than this are downscaled
@@ -231,6 +247,29 @@ def tcp_reachable(host: str, port: int, timeout: int = HEALTH_TCP_TIMEOUT) -> bo
             return True
     except OSError:
         return False
+
+
+def autodetect_printer() -> Optional[dict]:
+    """Return the first reachable printer candidate on the LAN, or None.
+
+    Records the discovered host into CONFIG and the discovery metadata into
+    PRINTER_DISCOVERY so /health can surface how the printer was found.
+    """
+    global PRINTER_DISCOVERY
+    port = int(CONFIG["printer_port"])
+    log("printer.autodetect.start", port=port)
+    candidates = discover_printers(port=port)
+    for c in candidates:
+        if tcp_reachable(c["host"], c["port"]):
+            with CONFIG_LOCK:
+                CONFIG["printer_host"] = c["host"]
+                CONFIG["printer_port"] = c["port"]
+            PRINTER_DISCOVERY = c
+            log("printer.autodetect.found", **c)
+            return c
+    log("printer.autodetect.none", level=logging.WARNING,
+        candidates=len(candidates))
+    return None
 
 
 def _apply_codepage(printer: Network) -> None:
@@ -567,15 +606,30 @@ def _print_error_handler(_request, exc: PrintError) -> JSONResponse:
 @app.get("/health")
 def health() -> dict:
     reachable = tcp_reachable(CONFIG["printer_host"], int(CONFIG["printer_port"]))
+    printer = {
+        "host": CONFIG["printer_host"],
+        "port": int(CONFIG["printer_port"]),
+        "reachable": reachable,
+    }
+    if PRINTER_DISCOVERY:
+        printer["discovered_via"] = PRINTER_DISCOVERY.get("method")
+        if PRINTER_DISCOVERY.get("name"):
+            printer["name"] = PRINTER_DISCOVERY["name"]
     return {
         "status": "ok" if reachable else "degraded",
         "service": SERVICE_NAME,
-        "printer": {
-            "host": CONFIG["printer_host"],
-            "port": int(CONFIG["printer_port"]),
-            "reachable": reachable,
-        },
+        "printer": printer,
     }
+
+
+@app.get("/discover")
+def discover(_: None = Depends(require_auth)) -> dict:
+    """List printer candidates currently reachable on the LAN."""
+    port = int(CONFIG["printer_port"])
+    candidates = discover_printers(port=port)
+    for c in candidates:
+        c["reachable"] = tcp_reachable(c["host"], c["port"])
+    return {"port": port, "candidates": candidates}
 
 
 @app.get("/metrics")
@@ -857,9 +911,13 @@ def _mount_frontend() -> None:
 # Entry point
 # --------------------------------------------------------------------------
 def main() -> None:
+    if not CONFIG["printer_host"] and PRINTER_AUTODETECT:
+        autodetect_printer()
+
     log("service.start", service=SERVICE_NAME, listen="0.0.0.0:8080",
         printer_host=CONFIG["printer_host"] or "(unconfigured)",
         printer_port=CONFIG["printer_port"],
+        printer_discovered_via=(PRINTER_DISCOVERY or {}).get("method"),
         codepage=CONFIG["printer_codepage"],
         retries=CONFIG["printer_retries"], tz=CONFIG["tz"],
         setup_completed=CONFIG["setup_completed"],
