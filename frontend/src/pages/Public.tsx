@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AppFooter } from "@/components/AppFooter";
@@ -34,18 +35,22 @@ export function Public() {
   const signedIn = Boolean(me);
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/30">
-      <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-        <div className="flex items-center gap-2">
-          <Printer className="h-5 w-5 text-primary" />
-          <span className="text-lg font-semibold tracking-tight">printcast</span>
+    <div className="app-shell-bg flex min-h-screen flex-col">
+      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border/60 bg-background/70 px-4 backdrop-blur md:px-6">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-info text-primary-foreground shadow-soft">
+            <Printer className="h-4 w-4" />
+          </div>
+          <span className="text-base font-semibold tracking-tight">printcast</span>
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
+          <ThemeToggle />
           <Button
             variant={signedIn ? "default" : "outline"}
             size="sm"
             onClick={() => navigate(signedIn ? "/admin" : "/login")}
+            className={signedIn ? "shadow-soft" : ""}
           >
             <ShieldCheck className="mr-2 h-4 w-4" />
             {signedIn ? t("public.adminConsole") : t("public.adminLogin")}
@@ -53,13 +58,13 @@ export function Public() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("public.title")}</h1>
+      <main className="mx-auto w-full max-w-3xl flex-1 animate-fade-in space-y-6 p-4 md:p-8">
+        <div className="space-y-1.5">
+          <h1 className="text-3xl font-semibold tracking-tight">{t("public.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("public.description")}</p>
         </div>
 
-        <Card>
+        <Card className="shadow-medium">
           <CardHeader>
             <CardTitle>{t("public.composeTitle")}</CardTitle>
             <CardDescription>{t("public.composeDesc")}</CardDescription>

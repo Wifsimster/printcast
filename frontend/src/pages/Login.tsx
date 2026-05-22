@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -49,14 +50,15 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-md">
-        <div className="flex justify-end px-6 pt-6">
+    <div className="app-shell-bg flex min-h-screen items-center justify-center px-4">
+      <Card className="w-full max-w-md shadow-medium animate-fade-in">
+        <div className="flex items-center justify-end gap-2 px-6 pt-6">
           <LanguageSwitcher />
+          <ThemeToggle />
         </div>
         <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Printer className="h-6 w-6 text-primary" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-info text-primary-foreground shadow-strong">
+            <Printer className="h-7 w-7" />
           </div>
           <CardTitle>{t("login.title")}</CardTitle>
           <CardDescription>{t("login.description")}</CardDescription>
