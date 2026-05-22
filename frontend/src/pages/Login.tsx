@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -50,6 +51,9 @@ export function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md">
+        <div className="flex justify-end px-6 pt-6">
+          <LanguageSwitcher />
+        </div>
         <CardHeader className="space-y-2 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Printer className="h-6 w-6 text-primary" />

@@ -1,5 +1,6 @@
 import { PointerEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Eraser, Loader2, Printer, Send, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -18,6 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AppFooter } from "@/components/AppFooter";
@@ -27,6 +29,7 @@ const CANVAS_HEIGHT = 384;
 
 export function Public() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { me } = useAuth();
   const signedIn = Boolean(me);
 
@@ -37,34 +40,35 @@ export function Public() {
           <Printer className="h-5 w-5 text-primary" />
           <span className="text-lg font-semibold tracking-tight">printcast</span>
         </div>
-        <Button
-          variant={signedIn ? "default" : "outline"}
-          size="sm"
-          onClick={() => navigate(signedIn ? "/admin" : "/login")}
-        >
-          <ShieldCheck className="mr-2 h-4 w-4" />
-          {signedIn ? "Admin console" : "Admin login"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <Button
+            variant={signedIn ? "default" : "outline"}
+            size="sm"
+            onClick={() => navigate(signedIn ? "/admin" : "/login")}
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            {signedIn ? t("public.adminConsole") : t("public.adminLogin")}
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Print something</h1>
-          <p className="text-sm text-muted-foreground">
-            Send a message or a drawing straight to the thermal printer.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("public.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("public.description")}</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Compose</CardTitle>
-            <CardDescription>Type a message or draw, then hit print.</CardDescription>
+            <CardTitle>{t("public.composeTitle")}</CardTitle>
+            <CardDescription>{t("public.composeDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="text">
               <TabsList>
-                <TabsTrigger value="text">Text</TabsTrigger>
-                <TabsTrigger value="draw">Drawing</TabsTrigger>
+                <TabsTrigger value="text">{t("public.tabText")}</TabsTrigger>
+                <TabsTrigger value="draw">{t("public.tabDraw")}</TabsTrigger>
               </TabsList>
               <TabsContent value="text" className="mt-6">
                 <PublicText />
@@ -83,6 +87,7 @@ export function Public() {
 }
 
 function PublicText() {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [align, setAlign] = useState<"left" | "center" | "right">("left");
   const [bold, setBold] = useState(false);
@@ -93,30 +98,36 @@ function PublicText() {
     setBusy(true);
     try {
       await endpoints.printText({ text, align, bold });
-      toast.success("Text printed");
+      toast.success(t("public.textPrinted"));
       setText("");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed");
+      toast.error(err instanceof ApiError ? err.message : t("public.failed"));
     } finally {
       setBusy(false);
     }
   }
 
+  const alignLabels: Record<"left" | "center" | "right", string> = {
+    left: t("public.alignLeft"),
+    center: t("public.alignCenter"),
+    right: t("public.alignRight"),
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="public-text">Your message</Label>
+        <Label htmlFor="public-text">{t("public.yourMessage")}</Label>
         <Textarea
           id="public-text"
           rows={6}
-          placeholder="Write something to print…"
+          placeholder={t("public.messagePlaceholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Alignment</Label>
+          <Label>{t("public.alignment")}</Label>
           <div className="flex gap-2">
             {(["left", "center", "right"] as const).map((a) => (
               <Button
@@ -126,20 +137,20 @@ function PublicText() {
                 onClick={() => setAlign(a)}
                 type="button"
               >
-                {a}
+                {alignLabels[a]}
               </Button>
             ))}
           </div>
         </div>
         <div className="space-y-2">
-          <Label>Style</Label>
+          <Label>{t("public.style")}</Label>
           <Button
             size="sm"
             variant={bold ? "default" : "outline"}
             onClick={() => setBold((b) => !b)}
             type="button"
           >
-            Bold {bold ? "on" : "off"}
+            {bold ? t("public.boldOn") : t("public.boldOff")}
           </Button>
         </div>
       </div>
@@ -149,13 +160,14 @@ function PublicText() {
         ) : (
           <Send className="mr-2 h-4 w-4" />
         )}
-        Print
+        {t("public.print")}
       </Button>
     </div>
   );
 }
 
 function PublicDraw() {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
@@ -231,10 +243,10 @@ function PublicDraw() {
     try {
       const dataUrl = canvas.toDataURL("image/png");
       await endpoints.printImage({ image: dataUrl, align: "center" });
-      toast.success("Drawing printed");
+      toast.success(t("public.drawingPrinted"));
       clear();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed");
+      toast.error(err instanceof ApiError ? err.message : t("public.failed"));
     } finally {
       setBusy(false);
     }
@@ -242,9 +254,7 @@ function PublicDraw() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Draw with your finger or mouse. The canvas is printed centered.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("public.drawDesc")}</p>
       <div className="overflow-hidden rounded-md border bg-white">
         <canvas
           ref={canvasRef}
@@ -265,10 +275,10 @@ function PublicDraw() {
           ) : (
             <Send className="mr-2 h-4 w-4" />
           )}
-          Print drawing
+          {t("public.printDrawing")}
         </Button>
         <Button variant="outline" onClick={clear} disabled={busy}>
-          <Eraser className="mr-2 h-4 w-4" /> Clear
+          <Eraser className="mr-2 h-4 w-4" /> {t("public.clear")}
         </Button>
       </div>
     </div>
