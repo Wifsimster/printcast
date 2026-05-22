@@ -182,6 +182,18 @@ export function Layout() {
         <main className="flex-1 p-6">
           <Outlet />
         </main>
+        <footer className="border-t bg-background px-6 py-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span>printcast v{__APP_VERSION__}</span>
+            <span>
+              Built{" "}
+              {new Date(__BUILD_DATE__).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </span>
+          </div>
+        </footer>
       </div>
     </div>
   );
