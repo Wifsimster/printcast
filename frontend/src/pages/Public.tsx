@@ -18,14 +18,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ApiError, endpoints, getToken } from "@/lib/api";
+import { ApiError, endpoints } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 const CANVAS_WIDTH = 512;
 const CANVAS_HEIGHT = 384;
 
 export function Public() {
   const navigate = useNavigate();
-  const isAdmin = Boolean(getToken());
+  const { me } = useAuth();
+  const signedIn = Boolean(me);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -35,12 +37,12 @@ export function Public() {
           <span className="text-lg font-semibold tracking-tight">printcast</span>
         </div>
         <Button
-          variant={isAdmin ? "default" : "outline"}
+          variant={signedIn ? "default" : "outline"}
           size="sm"
-          onClick={() => navigate(isAdmin ? "/admin" : "/login")}
+          onClick={() => navigate(signedIn ? "/admin" : "/login")}
         >
           <ShieldCheck className="mr-2 h-4 w-4" />
-          {isAdmin ? "Admin console" : "Admin login"}
+          {signedIn ? "Admin console" : "Admin login"}
         </Button>
       </header>
 

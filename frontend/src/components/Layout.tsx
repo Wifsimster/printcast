@@ -3,6 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Activity,
   BarChart3,
+  Brush,
+  Home,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -13,23 +15,36 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { clearToken, endpoints, getToken, HealthResponse } from "@/lib/api";
+import { endpoints, HealthResponse } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
-const nav = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  end?: boolean;
+  adminOnly?: boolean;
+};
+
+const nav: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, end: false },
-  { to: "/admin/jobs", label: "Jobs", icon: ListChecks, end: false },
-  { to: "/admin/test", label: "Test print", icon: TestTube2, end: false },
-  { to: "/admin/settings", label: "Settings", icon: SettingsIcon, end: false },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, adminOnly: true },
+  { to: "/admin/jobs", label: "Jobs", icon: ListChecks },
+  { to: "/admin/draw", label: "Draw", icon: Brush },
+  { to: "/admin/test", label: "Test print", icon: TestTube2, adminOnly: true },
+  { to: "/admin/settings", label: "Settings", icon: SettingsIcon, adminOnly: true },
 ];
 
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { me, loading: authLoading, signOut } = useAuth();
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  const visibleNav = nav.filter((item) => !item.adminOnly || me?.role === "admin");
 
   useEffect(() => {
-    if (!getToken()) {
+    if (authLoading) return;
+    if (!me) {
       navigate("/login", { replace: true });
       return;
     }
@@ -45,7 +60,7 @@ export function Layout() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, authLoading, me]);
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -55,7 +70,7 @@ export function Layout() {
           <span className="text-lg font-semibold tracking-tight">printcast</span>
         </div>
         <nav className="flex-1 space-y-1 p-3">
-          {nav.map((item) => (
+          {visibleNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -74,17 +89,26 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t p-3">
+        <div className="border-t p-3 space-y-1">
           <Button
             variant="ghost"
             size="sm"
             className="w-full justify-start"
-            onClick={() => {
-              clearToken();
+            onClick={() => navigate("/")}
+          >
+            <Home className="mr-2 h-4 w-4" /> Public page
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+            onClick={async () => {
+              await signOut();
               navigate("/", { replace: true });
             }}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
+            <LogOut className="mr-2 h-4 w-4" />
+            {me ? `Sign out (${me.email})` : "Sign out"}
           </Button>
         </div>
       </aside>
@@ -108,7 +132,7 @@ export function Layout() {
             )}
           </div>
           <nav className="flex gap-1 md:hidden">
-            {nav.map((item) => (
+            {visibleNav.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

@@ -9,6 +9,7 @@ import {
   Loader2,
   PartyPopper,
   Printer,
+  Radar,
   RefreshCw,
   TestTube2,
   Wifi,
@@ -30,7 +31,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { ApiError, endpoints, setToken } from "@/lib/api";
+import { ApiError, endpoints, type PrinterCandidate } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type Step = 0 | 1 | 2 | 3 | 4;
@@ -43,6 +44,10 @@ interface Form {
   printer_retries: number;
   tz: string;
   printer_token: string;
+  admin_email: string;
+  admin_password: string;
+  admin_password_confirm: string;
+  admin_name: string;
 }
 
 const initialForm: Form = {
@@ -53,6 +58,10 @@ const initialForm: Form = {
   printer_retries: 3,
   tz: "Europe/Paris",
   printer_token: "",
+  admin_email: "",
+  admin_password: "",
+  admin_password_confirm: "",
+  admin_name: "",
 };
 
 const stepTitles = [
@@ -83,8 +92,15 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
 
   async function finish() {
     try {
-      await endpoints.completeSetup({ ...form });
-      setToken(form.printer_token);
+      const { admin_password_confirm: _confirm, ...payload } = form;
+      void _confirm;
+      await endpoints.completeSetup(payload);
+      // Auto sign-in so the user lands on the dashboard already authenticated.
+      try {
+        await endpoints.signIn(form.admin_email, form.admin_password);
+      } catch {
+        // If auto sign-in fails (unlikely), they can just log in manually.
+      }
       toast.success("Setup complete");
       onComplete();
       navigate("/admin", { replace: true });
@@ -194,7 +210,33 @@ function PrinterStep({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const [scanning, setScanning] = useState(false);
+  const [candidates, setCandidates] = useState<PrinterCandidate[] | null>(null);
   const valid = form.printer_host.trim() && form.printer_port > 0;
+
+  async function scan() {
+    setScanning(true);
+    try {
+      const result = await endpoints.discoverPrinters();
+      setCandidates(result.candidates);
+      if (result.candidates.length === 0) {
+        toast.warning("No printers found on the local network");
+      } else {
+        toast.success(`Found ${result.candidates.length} candidate(s)`);
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  function pick(c: PrinterCandidate) {
+    update("printer_host", c.host);
+    update("printer_port", c.port);
+    toast.success(`Selected ${c.host}:${c.port}`);
+  }
+
   return (
     <>
       <CardHeader>
@@ -205,6 +247,58 @@ function PrinterStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Auto-discover on LAN</p>
+              <p className="text-xs text-muted-foreground">
+                mDNS browse + parallel TCP probe of the local /24 on port 9100.
+              </p>
+            </div>
+            <Button variant="outline" onClick={scan} disabled={scanning}>
+              {scanning ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Radar className="mr-2 h-4 w-4" />
+              )}
+              Scan network
+            </Button>
+          </div>
+          {candidates && candidates.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {candidates.map((c) => (
+                <li
+                  key={`${c.host}:${c.port}`}
+                  className="flex items-center justify-between gap-3 rounded-md border bg-background p-2"
+                >
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="truncate font-mono text-sm">
+                      {c.host}:{c.port}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      {c.name && <span className="truncate">{c.name}</span>}
+                      <Badge variant="outline" className="text-[10px]">
+                        {c.method}
+                      </Badge>
+                      {c.reachable ? (
+                        <Badge variant="success" className="text-[10px]">
+                          <Wifi className="mr-1 h-2.5 w-2.5" /> reachable
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-[10px]">
+                          <WifiOff className="mr-1 h-2.5 w-2.5" /> unreachable
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => pick(c)}>
+                    Use
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div className="grid gap-4 sm:grid-cols-[2fr,1fr]">
           <div className="space-y-2">
             <Label htmlFor="host">Printer host</Label>
@@ -321,28 +415,83 @@ function AuthStep({
     }
   }
 
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.admin_email.trim());
+  const passwordOk =
+    form.admin_password.length >= 8 &&
+    form.admin_password === form.admin_password_confirm;
   const tokenOk = form.printer_token.length >= 24;
+  const valid = emailOk && passwordOk && tokenOk;
 
   return (
     <>
       <CardHeader>
         <CardTitle>Authentication</CardTitle>
         <CardDescription>
-          The /print endpoints require an HTTP bearer token. Generate a fresh
-          one or paste an existing secret.
+          Create your admin account, then set the bearer token webhooks will
+          use to call the /print endpoints.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
           <KeyRound className="h-4 w-4" />
-          <AlertTitle>Store this token somewhere safe</AlertTitle>
+          <AlertTitle>First user becomes admin</AlertTitle>
           <AlertDescription>
-            It is the only credential for callers like n8n, Home Assistant, and
-            ntfy. You can rotate it later from settings.
+            This account is created in the better-auth sidecar and gets the{" "}
+            <span className="font-mono">admin</span> role. The bearer token
+            below is separate — it's only for webhook callers (n8n, Home
+            Assistant, ntfy).
           </AlertDescription>
         </Alert>
         <div className="space-y-2">
-          <Label htmlFor="token">Bearer token</Label>
+          <Label htmlFor="admin_email">Admin email</Label>
+          <Input
+            id="admin_email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={form.admin_email}
+            onChange={(e) => update("admin_email", e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="admin_name">Display name (optional)</Label>
+          <Input
+            id="admin_name"
+            type="text"
+            placeholder="Admin"
+            value={form.admin_name}
+            onChange={(e) => update("admin_name", e.target.value)}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="admin_password">Password</Label>
+            <Input
+              id="admin_password"
+              type="password"
+              autoComplete="new-password"
+              value={form.admin_password}
+              onChange={(e) => update("admin_password", e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="admin_password_confirm">Confirm</Label>
+            <Input
+              id="admin_password_confirm"
+              type="password"
+              autoComplete="new-password"
+              value={form.admin_password_confirm}
+              onChange={(e) =>
+                update("admin_password_confirm", e.target.value)
+              }
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          At least 8 characters. Must match.
+        </p>
+        <div className="space-y-2">
+          <Label htmlFor="token">Webhook bearer token</Label>
           <div className="flex gap-2">
             <Input
               id="token"
@@ -379,7 +528,7 @@ function AuthStep({
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <Button onClick={onNext} disabled={!tokenOk}>
+        <Button onClick={onNext} disabled={!valid}>
           Continue <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
@@ -514,12 +663,13 @@ function DoneStep({
       </CardHeader>
       <CardContent>
         <dl className="grid gap-2 rounded-lg border bg-muted/30 p-4 text-sm">
+          <Row label="Admin" value={form.admin_email} />
           <Row label="Printer" value={`${form.printer_host}:${form.printer_port}`} />
           <Row label="Codepage" value={form.printer_codepage} />
           <Row label="Timeout / retries" value={`${form.printer_timeout}s / ${form.printer_retries}`} />
           <Row label="Timezone" value={form.tz} />
           <Row
-            label="Token"
+            label="Webhook token"
             value={
               form.printer_token.slice(0, 4) +
               "…" +

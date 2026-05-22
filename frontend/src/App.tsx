@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { endpoints, SetupStatus } from "@/lib/api";
+import { AuthProvider, RequireAdmin } from "@/lib/auth";
 import { Layout } from "@/components/Layout";
 import { Dashboard } from "@/pages/Dashboard";
 import { Analytics } from "@/pages/Analytics";
 import { Jobs } from "@/pages/Jobs";
 import { Settings } from "@/pages/Settings";
 import { TestPrint } from "@/pages/TestPrint";
+import { Draw } from "@/pages/Draw";
 import { Login } from "@/pages/Login";
 import { SetupWizard } from "@/pages/SetupWizard";
 import { Public } from "@/pages/Public";
@@ -42,18 +44,42 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Public />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/admin" element={<Layout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="jobs" element={<Jobs />} />
-        <Route path="test" element={<TestPrint />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-      <Route path="*" element={<RedirectHome />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<Public />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="jobs" element={<Jobs />} />
+          <Route path="draw" element={<Draw />} />
+          <Route
+            path="analytics"
+            element={
+              <RequireAdmin>
+                <Analytics />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="test"
+            element={
+              <RequireAdmin>
+                <TestPrint />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <RequireAdmin>
+                <Settings />
+              </RequireAdmin>
+            }
+          />
+        </Route>
+        <Route path="*" element={<RedirectHome />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 
