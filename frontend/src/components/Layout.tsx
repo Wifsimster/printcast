@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Activity,
   BarChart3,
+  Brush,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -20,6 +21,7 @@ const nav = [
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/jobs", label: "Jobs", icon: ListChecks },
   { to: "/test", label: "Test print", icon: TestTube2 },
+  { to: "/draw", label: "Draw", icon: Brush },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
