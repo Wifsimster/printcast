@@ -284,6 +284,9 @@
     "composeDesc": "Tapez un message ou dessinez, puis imprimez.",
     "tabText": "Texte",
     "tabDraw": "Dessin",
+    "tabQr": "QR code",
+    "tabFortune": "Inspiration",
+    "tabAscii": "ASCII art",
     "yourMessage": "Votre message",
     "messagePlaceholder": "Écrivez quelque chose à imprimer…",
     "alignment": "Alignement",
@@ -299,7 +302,54 @@
     "drawingPrinted": "Dessin imprimé",
     "printDrawing": "Imprimer le dessin",
     "clear": "Effacer",
-    "failed": "Échec"
+    "failed": "Échec",
+    "qr": {
+      "intro": "Encodez un lien ou les identifiants Wi-Fi. Le QR est généré localement et imprimé en image centrée.",
+      "tabUrl": "Lien / texte",
+      "tabWifi": "Wi-Fi",
+      "urlLabel": "URL ou texte",
+      "urlPlaceholder": "https://exemple.com",
+      "wifiSsid": "Nom du réseau (SSID)",
+      "wifiSsidPlaceholder": "MonWifiMaison",
+      "wifiPassword": "Mot de passe",
+      "wifiPasswordPlaceholder": "••••••••",
+      "wifiAuth": "Sécurité",
+      "authWpa": "WPA / WPA2",
+      "authWep": "WEP",
+      "authOpen": "Ouvert (sans mot de passe)",
+      "wifiHidden": "Réseau caché",
+      "previewEmpty": "L'aperçu apparaîtra ici",
+      "print": "Imprimer le QR",
+      "printed": "QR imprimé"
+    },
+    "fortune": {
+      "intro": "Un clic, un tirage au hasard. Choisis l'ambiance.",
+      "category": "Catégorie",
+      "catMotivational": "Motivation",
+      "catJokes": "Blagues",
+      "catCompliments": "Compliments",
+      "catProverbs": "Proverbes",
+      "shuffle": "Un autre",
+      "print": "Imprimer celle-ci",
+      "printed": "Citation imprimée"
+    },
+    "ascii": {
+      "intro": "Choisis une mini scène ASCII. Elle s'imprime centrée sur le ticket.",
+      "print": "Imprimer l'ASCII art",
+      "printed": "ASCII art imprimé",
+      "names": {
+        "cat": "Chat",
+        "bunny": "Lapin",
+        "owl": "Hibou",
+        "dog": "Chien",
+        "robot": "Robot",
+        "ghost": "Fantôme",
+        "rocket": "Fusée",
+        "flower": "Fleur",
+        "heart": "Cœur",
+        "star": "Étoile"
+      }
+    }
   },
   "draw": {
     "title": "Dessine ton dessert",

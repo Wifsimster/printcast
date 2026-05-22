@@ -24,6 +24,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AppFooter } from "@/components/AppFooter";
+import { PublicQR } from "@/components/public/PublicQR";
+import { PublicFortune } from "@/components/public/PublicFortune";
+import { PublicAscii } from "@/components/public/PublicAscii";
 
 const CANVAS_WIDTH = 512;
 const CANVAS_HEIGHT = 384;
@@ -71,15 +74,27 @@ export function Public() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="text">
-              <TabsList>
+              <TabsList className="flex h-auto flex-wrap justify-start gap-1">
                 <TabsTrigger value="text">{t("public.tabText")}</TabsTrigger>
                 <TabsTrigger value="draw">{t("public.tabDraw")}</TabsTrigger>
+                <TabsTrigger value="qr">{t("public.tabQr")}</TabsTrigger>
+                <TabsTrigger value="fortune">{t("public.tabFortune")}</TabsTrigger>
+                <TabsTrigger value="ascii">{t("public.tabAscii")}</TabsTrigger>
               </TabsList>
               <TabsContent value="text" className="mt-6">
                 <PublicText />
               </TabsContent>
               <TabsContent value="draw" className="mt-6">
                 <PublicDraw />
+              </TabsContent>
+              <TabsContent value="qr" className="mt-6">
+                <PublicQR />
+              </TabsContent>
+              <TabsContent value="fortune" className="mt-6">
+                <PublicFortune />
+              </TabsContent>
+              <TabsContent value="ascii" className="mt-6">
+                <PublicAscii />
               </TabsContent>
             </Tabs>
           </CardContent>

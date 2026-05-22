@@ -284,6 +284,9 @@
     "composeDesc": "Type a message or draw, then hit print.",
     "tabText": "Text",
     "tabDraw": "Drawing",
+    "tabQr": "QR code",
+    "tabFortune": "Fortune",
+    "tabAscii": "ASCII art",
     "yourMessage": "Your message",
     "messagePlaceholder": "Write something to print…",
     "alignment": "Alignment",
@@ -299,7 +302,54 @@
     "drawingPrinted": "Drawing printed",
     "printDrawing": "Print drawing",
     "clear": "Clear",
-    "failed": "Failed"
+    "failed": "Failed",
+    "qr": {
+      "intro": "Encode a link or Wi-Fi credentials. The QR is rendered locally and printed as a centered image.",
+      "tabUrl": "Link / text",
+      "tabWifi": "Wi-Fi",
+      "urlLabel": "URL or text",
+      "urlPlaceholder": "https://example.com",
+      "wifiSsid": "Network name (SSID)",
+      "wifiSsidPlaceholder": "MyHomeWifi",
+      "wifiPassword": "Password",
+      "wifiPasswordPlaceholder": "••••••••",
+      "wifiAuth": "Security",
+      "authWpa": "WPA / WPA2",
+      "authWep": "WEP",
+      "authOpen": "Open (no password)",
+      "wifiHidden": "Hidden network",
+      "previewEmpty": "Preview will appear here",
+      "print": "Print QR code",
+      "printed": "QR code printed"
+    },
+    "fortune": {
+      "intro": "One tap, one random pick. Choose a vibe.",
+      "category": "Category",
+      "catMotivational": "Motivational",
+      "catJokes": "Dad jokes",
+      "catCompliments": "Compliments",
+      "catProverbs": "Proverbs",
+      "shuffle": "Another one",
+      "print": "Print this",
+      "printed": "Fortune printed"
+    },
+    "ascii": {
+      "intro": "Pick a tiny ASCII scene. It prints centered on the receipt.",
+      "print": "Print ASCII art",
+      "printed": "ASCII art printed",
+      "names": {
+        "cat": "Cat",
+        "bunny": "Bunny",
+        "owl": "Owl",
+        "dog": "Dog",
+        "robot": "Robot",
+        "ghost": "Ghost",
+        "rocket": "Rocket",
+        "flower": "Flower",
+        "heart": "Heart",
+        "star": "Star"
+      }
+    }
   },
   "draw": {
     "title": "Draw your dessert",

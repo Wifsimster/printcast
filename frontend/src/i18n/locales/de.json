@@ -284,6 +284,9 @@
     "composeDesc": "Geben Sie eine Nachricht ein oder zeichnen Sie, dann drucken.",
     "tabText": "Text",
     "tabDraw": "Zeichnung",
+    "tabQr": "QR-Code",
+    "tabFortune": "Inspiration",
+    "tabAscii": "ASCII-Kunst",
     "yourMessage": "Ihre Nachricht",
     "messagePlaceholder": "Schreiben Sie etwas zum Drucken…",
     "alignment": "Ausrichtung",
@@ -299,7 +302,54 @@
     "drawingPrinted": "Zeichnung gedruckt",
     "printDrawing": "Zeichnung drucken",
     "clear": "Löschen",
-    "failed": "Fehlgeschlagen"
+    "failed": "Fehlgeschlagen",
+    "qr": {
+      "intro": "Kodieren Sie einen Link oder WLAN-Zugangsdaten. Der QR-Code wird lokal erzeugt und zentriert gedruckt.",
+      "tabUrl": "Link / Text",
+      "tabWifi": "WLAN",
+      "urlLabel": "URL oder Text",
+      "urlPlaceholder": "https://beispiel.de",
+      "wifiSsid": "Netzwerkname (SSID)",
+      "wifiSsidPlaceholder": "MeinHeimWLAN",
+      "wifiPassword": "Passwort",
+      "wifiPasswordPlaceholder": "••••••••",
+      "wifiAuth": "Sicherheit",
+      "authWpa": "WPA / WPA2",
+      "authWep": "WEP",
+      "authOpen": "Offen (ohne Passwort)",
+      "wifiHidden": "Verstecktes Netzwerk",
+      "previewEmpty": "Vorschau erscheint hier",
+      "print": "QR drucken",
+      "printed": "QR gedruckt"
+    },
+    "fortune": {
+      "intro": "Ein Klick, eine zufällige Auswahl. Wähle die Stimmung.",
+      "category": "Kategorie",
+      "catMotivational": "Motivation",
+      "catJokes": "Witze",
+      "catCompliments": "Komplimente",
+      "catProverbs": "Sprichwörter",
+      "shuffle": "Noch eines",
+      "print": "Dieses drucken",
+      "printed": "Spruch gedruckt"
+    },
+    "ascii": {
+      "intro": "Wähle eine kleine ASCII-Szene. Sie wird zentriert auf dem Bon gedruckt.",
+      "print": "ASCII-Kunst drucken",
+      "printed": "ASCII-Kunst gedruckt",
+      "names": {
+        "cat": "Katze",
+        "bunny": "Hase",
+        "owl": "Eule",
+        "dog": "Hund",
+        "robot": "Roboter",
+        "ghost": "Geist",
+        "rocket": "Rakete",
+        "flower": "Blume",
+        "heart": "Herz",
+        "star": "Stern"
+      }
+    }
   },
   "draw": {
     "title": "Zeichne dein Dessert",
