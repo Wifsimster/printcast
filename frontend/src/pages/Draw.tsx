@@ -242,7 +242,7 @@ export function Draw() {
 
           <div
             ref={wrapperRef}
-            className="overflow-hidden rounded-md border bg-white"
+            className="mx-auto w-full max-w-[480px] overflow-hidden rounded-md border bg-white"
           >
             <canvas
               ref={canvasRef}
