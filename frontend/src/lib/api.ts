@@ -155,4 +155,9 @@ export const endpoints = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  printImage: (payload: Record<string, unknown>) =>
+    api<{ status: string }>("/print/image", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
