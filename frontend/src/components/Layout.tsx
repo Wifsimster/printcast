@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   BarChart3,
+  Globe,
   LayoutDashboard,
   ListChecks,
   LogOut,
@@ -14,19 +16,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { clearToken, endpoints, getToken, HealthResponse } from "@/lib/api";
-
-const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/jobs", label: "Jobs", icon: ListChecks },
-  { to: "/test", label: "Test print", icon: TestTube2 },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
-];
+import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const [health, setHealth] = useState<HealthResponse | null>(null);
+
+  const nav = [
+    { to: "/", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { to: "/analytics", label: t("nav.analytics"), icon: BarChart3 },
+    { to: "/jobs", label: t("nav.jobs"), icon: ListChecks },
+    { to: "/test", label: t("nav.testPrint"), icon: TestTube2 },
+    { to: "/settings", label: t("nav.settings"), icon: SettingsIcon },
+  ];
 
   useEffect(() => {
     if (!getToken()) {
@@ -46,6 +50,8 @@ export function Layout() {
       clearInterval(id);
     };
   }, [navigate, location.pathname]);
+
+  const currentLang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -74,7 +80,22 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t p-3">
+        <div className="border-t p-3 space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <select
+              aria-label={t("common.language")}
+              value={currentLang}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+            >
+              {SUPPORTED_LANGUAGES.map((lng) => (
+                <option key={lng} value={lng}>
+                  {t(`languages.${lng}`)}
+                </option>
+              ))}
+            </select>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -84,7 +105,7 @@ export function Layout() {
               navigate("/login", { replace: true });
             }}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
+            <LogOut className="mr-2 h-4 w-4" /> {t("common.signOut")}
           </Button>
         </div>
       </aside>
@@ -93,15 +114,15 @@ export function Layout() {
         <header className="flex h-16 items-center justify-between border-b bg-background px-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Activity className="h-4 w-4" />
-            <span>Printer</span>
+            <span>{t("header.printer")}</span>
             <span className="font-mono text-foreground">
-              {health?.printer?.host || "unknown"}:{health?.printer?.port || "—"}
+              {health?.printer?.host || t("header.unknown")}:{health?.printer?.port || t("common.dash")}
             </span>
             {health ? (
               health.printer.reachable ? (
-                <Badge variant="success">reachable</Badge>
+                <Badge variant="success">{t("header.reachable")}</Badge>
               ) : (
-                <Badge variant="destructive">unreachable</Badge>
+                <Badge variant="destructive">{t("header.unreachable")}</Badge>
               )
             ) : (
               <Badge variant="outline">…</Badge>

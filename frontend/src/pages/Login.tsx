@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Printer, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { endpoints, setToken } from "@/lib/api";
 
 export function Login() {
+  const { t } = useTranslation();
   const [token, setTokenValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -26,11 +28,11 @@ export function Login() {
     setToken(token.trim());
     try {
       await endpoints.config();
-      toast.success("Signed in");
+      toast.success(t("login.signedIn"));
       navigate("/", { replace: true });
     } catch {
       setToken("");
-      toast.error("Invalid token");
+      toast.error(t("login.invalidToken"));
     } finally {
       setSubmitting(false);
     }
@@ -43,20 +45,18 @@ export function Login() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Printer className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle>Sign in to printcast</CardTitle>
-          <CardDescription>
-            Paste the bearer token you configured during setup.
-          </CardDescription>
+          <CardTitle>{t("login.title")}</CardTitle>
+          <CardDescription>{t("login.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="token">Bearer token</Label>
+              <Label htmlFor="token">{t("login.tokenLabel")}</Label>
               <Input
                 id="token"
                 type="password"
                 autoFocus
-                placeholder="hex…"
+                placeholder={t("login.tokenPlaceholder")}
                 value={token}
                 onChange={(e) => setTokenValue(e.target.value)}
               />
@@ -67,7 +67,7 @@ export function Login() {
               ) : (
                 <KeyRound className="mr-2 h-4 w-4" />
               )}
-              Sign in
+              {t("common.signIn")}
             </Button>
           </form>
         </CardContent>
