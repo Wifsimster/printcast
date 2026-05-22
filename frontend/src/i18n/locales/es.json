@@ -284,6 +284,9 @@
     "composeDesc": "Escriba un mensaje o dibuje, y luego imprima.",
     "tabText": "Texto",
     "tabDraw": "Dibujo",
+    "tabQr": "Código QR",
+    "tabFortune": "Inspiración",
+    "tabAscii": "ASCII art",
     "yourMessage": "Tu mensaje",
     "messagePlaceholder": "Escribe algo para imprimir…",
     "alignment": "Alineación",
@@ -299,7 +302,54 @@
     "drawingPrinted": "Dibujo impreso",
     "printDrawing": "Imprimir dibujo",
     "clear": "Borrar",
-    "failed": "Error"
+    "failed": "Error",
+    "qr": {
+      "intro": "Codifica un enlace o las credenciales Wi-Fi. El QR se genera localmente y se imprime centrado.",
+      "tabUrl": "Enlace / texto",
+      "tabWifi": "Wi-Fi",
+      "urlLabel": "URL o texto",
+      "urlPlaceholder": "https://ejemplo.com",
+      "wifiSsid": "Nombre de red (SSID)",
+      "wifiSsidPlaceholder": "MiWifiCasa",
+      "wifiPassword": "Contraseña",
+      "wifiPasswordPlaceholder": "••••••••",
+      "wifiAuth": "Seguridad",
+      "authWpa": "WPA / WPA2",
+      "authWep": "WEP",
+      "authOpen": "Abierta (sin contraseña)",
+      "wifiHidden": "Red oculta",
+      "previewEmpty": "La vista previa aparecerá aquí",
+      "print": "Imprimir QR",
+      "printed": "QR impreso"
+    },
+    "fortune": {
+      "intro": "Un toque, una elección al azar. Elige el ambiente.",
+      "category": "Categoría",
+      "catMotivational": "Motivación",
+      "catJokes": "Chistes",
+      "catCompliments": "Cumplidos",
+      "catProverbs": "Refranes",
+      "shuffle": "Otra",
+      "print": "Imprimir esta",
+      "printed": "Frase impresa"
+    },
+    "ascii": {
+      "intro": "Elige una escena ASCII pequeña. Se imprime centrada en el ticket.",
+      "print": "Imprimir ASCII art",
+      "printed": "ASCII art impreso",
+      "names": {
+        "cat": "Gato",
+        "bunny": "Conejo",
+        "owl": "Búho",
+        "dog": "Perro",
+        "robot": "Robot",
+        "ghost": "Fantasma",
+        "rocket": "Cohete",
+        "flower": "Flor",
+        "heart": "Corazón",
+        "star": "Estrella"
+      }
+    }
   },
   "draw": {
     "title": "Dibuja tu postre",
