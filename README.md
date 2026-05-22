@@ -76,6 +76,7 @@ The same container that serves the API also serves the bundled React UI on
 | `/analytics`   | Throughput charts, success rate, type breakdown.       |
 | `/jobs`        | Last 200 jobs with status, duration, source.           |
 | `/test`        | Compose ad-hoc text/receipt prints from the browser.   |
+| `/draw`        | Finger-paint a dessert on mobile and print it.         |
 | `/settings`    | Edit printer config and rotate the bearer token.       |
 
 After setup, the dashboard requires the bearer token (the same one the
