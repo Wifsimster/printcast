@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
   ClipboardCopy,
+  Globe,
   KeyRound,
   Loader2,
   PartyPopper,
@@ -33,6 +35,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ApiError, endpoints, type PrinterCandidate } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 type Step = 0 | 1 | 2 | 3 | 4;
 
@@ -64,20 +67,21 @@ const initialForm: Form = {
   admin_name: "",
 };
 
-const stepTitles = [
-  "Welcome",
-  "Printer",
-  "Authentication",
-  "Verify",
-  "Done",
-];
-
 export function SetupWizard({ onComplete }: { onComplete: () => void }) {
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState<Step>(0);
   const [form, setForm] = useState<Form>(initialForm);
   const navigate = useNavigate();
 
-  const progress = useMemo(() => ((step + 1) / stepTitles.length) * 100, [step]);
+  const stepTitles = [
+    t("setup.stepWelcome"),
+    t("setup.stepPrinter"),
+    t("setup.stepAuth"),
+    t("setup.stepVerify"),
+    t("setup.stepDone"),
+  ];
+
+  const progress = useMemo(() => ((step + 1) / stepTitles.length) * 100, [step, stepTitles.length]);
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -95,20 +99,21 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
       const { admin_password_confirm: _confirm, ...payload } = form;
       void _confirm;
       await endpoints.completeSetup(payload);
-      // Auto sign-in so the user lands on the dashboard already authenticated.
       try {
         await endpoints.signIn(form.admin_email, form.admin_password);
       } catch {
-        // If auto sign-in fails (unlikely), they can just log in manually.
+        // Auto sign-in is best-effort; users can sign in manually if it fails.
       }
-      toast.success("Setup complete");
+      toast.success(t("setup.complete"));
       onComplete();
       navigate("/admin", { replace: true });
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Setup failed";
+      const msg = err instanceof ApiError ? err.message : t("setup.failed");
       toast.error(msg);
     }
   }
+
+  const currentLang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 px-4 py-10">
@@ -119,26 +124,41 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
               <Printer className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">printcast setup</h1>
-              <p className="text-sm text-muted-foreground">
-                First-run configuration wizard
-              </p>
+              <h1 className="text-xl font-semibold">{t("setup.headerTitle")}</h1>
+              <p className="text-sm text-muted-foreground">{t("setup.headerSubtitle")}</p>
             </div>
           </div>
-          <Badge variant="outline">
-            Step {step + 1} of {stepTitles.length}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <Globe className="h-4 w-4 text-muted-foreground" />
+              <select
+                aria-label={t("common.language")}
+                value={currentLang}
+                onChange={(e) => i18n.changeLanguage(e.target.value)}
+                className="rounded-md border bg-background px-2 py-1 text-sm"
+              >
+                {SUPPORTED_LANGUAGES.map((lng) => (
+                  <option key={lng} value={lng}>
+                    {t(`languages.${lng}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Badge variant="outline">
+              {t("setup.stepBadge", { current: step + 1, total: stepTitles.length })}
+            </Badge>
+          </div>
         </header>
 
         <div className="mb-8 space-y-2">
           <Progress value={progress} />
           <div className="flex justify-between text-xs text-muted-foreground">
-            {stepTitles.map((t, i) => (
+            {stepTitles.map((title, i) => (
               <span
-                key={t}
+                key={title}
                 className={cn(i <= step && "font-medium text-foreground")}
               >
-                {t}
+                {title}
               </span>
             ))}
           </div>
@@ -163,24 +183,22 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
 }
 
 function Welcome({ onNext }: { onNext: () => void }) {
+  const { t } = useTranslation();
+  const items = [
+    t("setup.welcomeItem1"),
+    t("setup.welcomeItem2"),
+    t("setup.welcomeItem3"),
+    t("setup.welcomeItem4"),
+  ];
   return (
     <>
       <CardHeader>
-        <CardTitle>Welcome to printcast</CardTitle>
-        <CardDescription>
-          Bridge HTTP requests to an ESC/POS thermal printer over the network.
-          This wizard takes about a minute and configures the printer host, an
-          authentication token, and a verification print.
-        </CardDescription>
+        <CardTitle>{t("setup.welcomeTitle")}</CardTitle>
+        <CardDescription>{t("setup.welcomeDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="space-y-3 text-sm">
-          {[
-            "Point the service at your printer's IP and raw-TCP port.",
-            "Generate or paste a bearer token for the /print endpoints.",
-            "Run a connectivity check and an optional test print.",
-            "Land on the supervision dashboard.",
-          ].map((line, idx) => (
+          {items.map((line, idx) => (
             <li key={idx} className="flex gap-3">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                 {idx + 1}
@@ -192,7 +210,7 @@ function Welcome({ onNext }: { onNext: () => void }) {
       </CardContent>
       <CardFooter className="justify-end">
         <Button onClick={onNext}>
-          Get started <ArrowRight className="ml-2 h-4 w-4" />
+          {t("setup.getStarted")} <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </>
@@ -210,6 +228,7 @@ function PrinterStep({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   const [scanning, setScanning] = useState(false);
   const [candidates, setCandidates] = useState<PrinterCandidate[] | null>(null);
   const valid = form.printer_host.trim() && form.printer_port > 0;
@@ -220,12 +239,12 @@ function PrinterStep({
       const result = await endpoints.discoverPrinters();
       setCandidates(result.candidates);
       if (result.candidates.length === 0) {
-        toast.warning("No printers found on the local network");
+        toast.warning(t("setup.noPrintersFound"));
       } else {
-        toast.success(`Found ${result.candidates.length} candidate(s)`);
+        toast.success(t("setup.candidatesFound", { n: result.candidates.length }));
       }
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Scan failed");
+      toast.error(err instanceof ApiError ? err.message : t("setup.scanFailed"));
     } finally {
       setScanning(false);
     }
@@ -234,26 +253,21 @@ function PrinterStep({
   function pick(c: PrinterCandidate) {
     update("printer_host", c.host);
     update("printer_port", c.port);
-    toast.success(`Selected ${c.host}:${c.port}`);
+    toast.success(t("setup.selected", { host: c.host, port: c.port }));
   }
 
   return (
     <>
       <CardHeader>
-        <CardTitle>Printer connection</CardTitle>
-        <CardDescription>
-          Address of your network thermal printer. Default is raw TCP / JetDirect
-          on port 9100.
-        </CardDescription>
+        <CardTitle>{t("setup.printerTitle")}</CardTitle>
+        <CardDescription>{t("setup.printerDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border bg-muted/30 p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <p className="text-sm font-medium">Auto-discover on LAN</p>
-              <p className="text-xs text-muted-foreground">
-                mDNS browse + parallel TCP probe of the local /24 on port 9100.
-              </p>
+              <p className="text-sm font-medium">{t("setup.autoDiscoverTitle")}</p>
+              <p className="text-xs text-muted-foreground">{t("setup.autoDiscoverDesc")}</p>
             </div>
             <Button variant="outline" onClick={scan} disabled={scanning}>
               {scanning ? (
@@ -261,7 +275,7 @@ function PrinterStep({
               ) : (
                 <Radar className="mr-2 h-4 w-4" />
               )}
-              Scan network
+              {t("setup.scanNetwork")}
             </Button>
           </div>
           {candidates && candidates.length > 0 && (
@@ -282,17 +296,17 @@ function PrinterStep({
                       </Badge>
                       {c.reachable ? (
                         <Badge variant="success" className="text-[10px]">
-                          <Wifi className="mr-1 h-2.5 w-2.5" /> reachable
+                          <Wifi className="mr-1 h-2.5 w-2.5" /> {t("setup.reachable")}
                         </Badge>
                       ) : (
                         <Badge variant="destructive" className="text-[10px]">
-                          <WifiOff className="mr-1 h-2.5 w-2.5" /> unreachable
+                          <WifiOff className="mr-1 h-2.5 w-2.5" /> {t("setup.unreachable")}
                         </Badge>
                       )}
                     </div>
                   </div>
                   <Button size="sm" variant="secondary" onClick={() => pick(c)}>
-                    Use
+                    {t("setup.use")}
                   </Button>
                 </li>
               ))}
@@ -301,7 +315,7 @@ function PrinterStep({
         </div>
         <div className="grid gap-4 sm:grid-cols-[2fr,1fr]">
           <div className="space-y-2">
-            <Label htmlFor="host">Printer host</Label>
+            <Label htmlFor="host">{t("settings.host")}</Label>
             <Input
               id="host"
               placeholder="192.168.30.40"
@@ -310,7 +324,7 @@ function PrinterStep({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="port">Port</Label>
+            <Label htmlFor="port">{t("settings.port")}</Label>
             <Input
               id="port"
               type="number"
@@ -324,18 +338,16 @@ function PrinterStep({
         <Separator />
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="codepage">Codepage</Label>
+            <Label htmlFor="codepage">{t("settings.codepage")}</Label>
             <Input
               id="codepage"
               value={form.printer_codepage}
               onChange={(e) => update("printer_codepage", e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              CP858 supports French accents.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("setup.codepageHint")}</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="timeout">Timeout (s)</Label>
+            <Label htmlFor="timeout">{t("settings.timeout")}</Label>
             <Input
               id="timeout"
               type="number"
@@ -345,7 +357,7 @@ function PrinterStep({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="retries">Retries</Label>
+            <Label htmlFor="retries">{t("settings.retries")}</Label>
             <Input
               id="retries"
               type="number"
@@ -357,23 +369,21 @@ function PrinterStep({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="tz">Timezone</Label>
+          <Label htmlFor="tz">{t("settings.timezone")}</Label>
           <Input
             id="tz"
             value={form.tz}
             onChange={(e) => update("tz", e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">
-            IANA name (e.g. Europe/Paris). Used for receipt timestamps.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("setup.tzHint")}</p>
         </div>
       </CardContent>
       <CardFooter className="justify-between">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t("common.back")}
         </Button>
         <Button onClick={onNext} disabled={!valid}>
-          Continue <ArrowRight className="ml-2 h-4 w-4" />
+          {t("common.continue")} <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </>
@@ -391,6 +401,7 @@ function AuthStep({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   const [generating, setGenerating] = useState(false);
 
   async function gen() {
@@ -398,9 +409,9 @@ function AuthStep({
     try {
       const { token } = await endpoints.generateToken();
       update("printer_token", token);
-      toast.success("Token generated — copy it somewhere safe");
+      toast.success(t("setup.tokenGenerated"));
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to generate");
+      toast.error(err instanceof ApiError ? err.message : t("setup.tokenGenFailed"));
     } finally {
       setGenerating(false);
     }
@@ -409,9 +420,9 @@ function AuthStep({
   async function copy() {
     try {
       await navigator.clipboard.writeText(form.printer_token);
-      toast.success("Copied to clipboard");
+      toast.success(t("setup.copyClip"));
     } catch {
-      toast.error("Could not copy");
+      toast.error(t("setup.copyFailed"));
     }
   }
 
@@ -425,47 +436,39 @@ function AuthStep({
   return (
     <>
       <CardHeader>
-        <CardTitle>Authentication</CardTitle>
-        <CardDescription>
-          Create your admin account, then set the bearer token webhooks will
-          use to call the /print endpoints.
-        </CardDescription>
+        <CardTitle>{t("setup.authTitle")}</CardTitle>
+        <CardDescription>{t("setup.authDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
           <KeyRound className="h-4 w-4" />
-          <AlertTitle>First user becomes admin</AlertTitle>
-          <AlertDescription>
-            This account is created in the better-auth sidecar and gets the{" "}
-            <span className="font-mono">admin</span> role. The bearer token
-            below is separate — it's only for webhook callers (n8n, Home
-            Assistant, ntfy).
-          </AlertDescription>
+          <AlertTitle>{t("setup.authAlertTitle")}</AlertTitle>
+          <AlertDescription>{t("setup.authAlertDesc")}</AlertDescription>
         </Alert>
         <div className="space-y-2">
-          <Label htmlFor="admin_email">Admin email</Label>
+          <Label htmlFor="admin_email">{t("setup.adminEmail")}</Label>
           <Input
             id="admin_email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t("setup.adminEmailPlaceholder")}
             value={form.admin_email}
             onChange={(e) => update("admin_email", e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="admin_name">Display name (optional)</Label>
+          <Label htmlFor="admin_name">{t("setup.adminName")}</Label>
           <Input
             id="admin_name"
             type="text"
-            placeholder="Admin"
+            placeholder={t("setup.adminNamePlaceholder")}
             value={form.admin_name}
             onChange={(e) => update("admin_name", e.target.value)}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="admin_password">Password</Label>
+            <Label htmlFor="admin_password">{t("setup.adminPassword")}</Label>
             <Input
               id="admin_password"
               type="password"
@@ -475,7 +478,7 @@ function AuthStep({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="admin_password_confirm">Confirm</Label>
+            <Label htmlFor="admin_password_confirm">{t("setup.adminPasswordConfirm")}</Label>
             <Input
               id="admin_password_confirm"
               type="password"
@@ -487,16 +490,14 @@ function AuthStep({
             />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          At least 8 characters. Must match.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("setup.passwordHint")}</p>
         <div className="space-y-2">
-          <Label htmlFor="token">Webhook bearer token</Label>
+          <Label htmlFor="token">{t("setup.webhookToken")}</Label>
           <div className="flex gap-2">
             <Input
               id="token"
               type="text"
-              placeholder="hex…"
+              placeholder={t("login.tokenPlaceholder")}
               value={form.printer_token}
               onChange={(e) => update("printer_token", e.target.value)}
               className="font-mono text-xs"
@@ -506,7 +507,7 @@ function AuthStep({
               size="icon"
               onClick={copy}
               disabled={!form.printer_token}
-              title="Copy"
+              title={t("common.copy")}
             >
               <ClipboardCopy className="h-4 w-4" />
             </Button>
@@ -516,20 +517,18 @@ function AuthStep({
               ) : (
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
-              Generate
+              {t("setup.generate")}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Use at least 24 characters. A 64-char hex string is recommended.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("setup.tokenHint")}</p>
         </div>
       </CardContent>
       <CardFooter className="justify-between">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t("common.back")}
         </Button>
         <Button onClick={onNext} disabled={!valid}>
-          Continue <ArrowRight className="ml-2 h-4 w-4" />
+          {t("common.continue")} <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </>
@@ -545,6 +544,7 @@ function VerifyStep({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   const [reachable, setReachable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -556,11 +556,11 @@ function VerifyStep({
         form.printer_port
       );
       setReachable(result.reachable);
-      if (result.reachable) toast.success("Printer is reachable");
-      else toast.warning("Printer is unreachable — check IP, port, and VLAN");
+      if (result.reachable) toast.success(t("setup.printerReachable"));
+      else toast.warning(t("setup.printerUnreachableMsg"));
     } catch (err) {
       setReachable(false);
-      toast.error(err instanceof ApiError ? err.message : "Check failed");
+      toast.error(err instanceof ApiError ? err.message : t("setup.checkFailed"));
     } finally {
       setChecking(false);
     }
@@ -574,10 +574,8 @@ function VerifyStep({
   return (
     <>
       <CardHeader>
-        <CardTitle>Verify connectivity</CardTitle>
-        <CardDescription>
-          TCP-probe the printer before saving the configuration.
-        </CardDescription>
+        <CardTitle>{t("setup.verifyTitle")}</CardTitle>
+        <CardDescription>{t("setup.verifyDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border bg-muted/30 p-4">
@@ -586,24 +584,22 @@ function VerifyStep({
               <p className="text-sm font-medium">
                 {form.printer_host}:{form.printer_port}
               </p>
-              <p className="text-xs text-muted-foreground">
-                Raw TCP connect probe (timeout 5s)
-              </p>
+              <p className="text-xs text-muted-foreground">{t("setup.tcpProbeHint")}</p>
             </div>
             <div>
               {checking ? (
                 <Badge variant="outline">
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" /> checking
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("setup.checking")}
                 </Badge>
               ) : reachable === null ? (
-                <Badge variant="outline">pending</Badge>
+                <Badge variant="outline">{t("setup.pending")}</Badge>
               ) : reachable ? (
                 <Badge variant="success">
-                  <Wifi className="mr-1 h-3 w-3" /> reachable
+                  <Wifi className="mr-1 h-3 w-3" /> {t("setup.reachable")}
                 </Badge>
               ) : (
                 <Badge variant="destructive">
-                  <WifiOff className="mr-1 h-3 w-3" /> unreachable
+                  <WifiOff className="mr-1 h-3 w-3" /> {t("setup.unreachable")}
                 </Badge>
               )}
             </div>
@@ -611,12 +607,8 @@ function VerifyStep({
         </div>
         {reachable === false && (
           <Alert variant="warning">
-            <AlertTitle>Cannot reach the printer</AlertTitle>
-            <AlertDescription>
-              You can still save and finish setup. The service will keep
-              retrying when print requests come in. Check the host/port and any
-              firewall or VLAN restrictions on port 9100.
-            </AlertDescription>
+            <AlertTitle>{t("setup.cannotReachTitle")}</AlertTitle>
+            <AlertDescription>{t("setup.cannotReachDesc")}</AlertDescription>
           </Alert>
         )}
         <Button variant="outline" onClick={check} disabled={checking}>
@@ -625,15 +617,15 @@ function VerifyStep({
           ) : (
             <TestTube2 className="mr-2 h-4 w-4" />
           )}
-          Re-run probe
+          {t("setup.rerunProbe")}
         </Button>
       </CardContent>
       <CardFooter className="justify-between">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t("common.back")}
         </Button>
         <Button onClick={onNext}>
-          Continue <ArrowRight className="ml-2 h-4 w-4" />
+          {t("common.continue")} <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </>
@@ -649,43 +641,41 @@ function DoneStep({
   onFinish: () => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <CardHeader className="space-y-2 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
           <PartyPopper className="h-6 w-6 text-success" />
         </div>
-        <CardTitle>Ready to print</CardTitle>
-        <CardDescription>
-          Review the summary, then save the configuration. The service stores
-          it in /app/data and applies it immediately — no restart needed.
-        </CardDescription>
+        <CardTitle>{t("setup.doneTitle")}</CardTitle>
+        <CardDescription>{t("setup.doneDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <dl className="grid gap-2 rounded-lg border bg-muted/30 p-4 text-sm">
-          <Row label="Admin" value={form.admin_email} />
-          <Row label="Printer" value={`${form.printer_host}:${form.printer_port}`} />
-          <Row label="Codepage" value={form.printer_codepage} />
-          <Row label="Timeout / retries" value={`${form.printer_timeout}s / ${form.printer_retries}`} />
-          <Row label="Timezone" value={form.tz} />
+          <Row label={t("setup.summaryAdmin")} value={form.admin_email} />
+          <Row label={t("setup.summaryPrinter")} value={`${form.printer_host}:${form.printer_port}`} />
+          <Row label={t("setup.summaryCodepage")} value={form.printer_codepage} />
+          <Row label={t("setup.summaryTimeoutRetries")} value={`${form.printer_timeout}s / ${form.printer_retries}`} />
+          <Row label={t("setup.summaryTimezone")} value={form.tz} />
           <Row
-            label="Webhook token"
+            label={t("setup.summaryWebhookToken")}
             value={
               form.printer_token.slice(0, 4) +
               "…" +
               form.printer_token.slice(-4) +
-              ` (${form.printer_token.length} chars)`
+              ` (${t("setup.summaryTokenChars", { n: form.printer_token.length })})`
             }
           />
         </dl>
       </CardContent>
       <CardFooter className="justify-between">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t("common.back")}
         </Button>
         <Button onClick={onFinish}>
           <CheckCircle2 className="mr-2 h-4 w-4" />
-          Save and open dashboard
+          {t("setup.saveOpen")}
         </Button>
       </CardFooter>
     </>

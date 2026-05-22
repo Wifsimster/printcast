@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Printer, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,6 +17,7 @@ import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -29,15 +31,15 @@ export function Login() {
     try {
       await endpoints.signIn(email.trim(), password);
       await refresh();
-      toast.success("Signed in");
+      toast.success(t("login.signedIn"));
       navigate("/admin", { replace: true });
     } catch (err) {
       const msg =
         err instanceof ApiError
           ? err.status === 401
-            ? "Invalid email or password"
+            ? t("login.invalidCredentials")
             : err.message
-          : "Sign in failed";
+          : t("login.failed");
       toast.error(msg);
       setPassword("");
     } finally {
@@ -52,30 +54,30 @@ export function Login() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Printer className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle>Sign in to printcast</CardTitle>
-          <CardDescription>Use your admin email and password.</CardDescription>
+          <CardTitle>{t("login.title")}</CardTitle>
+          <CardDescription>{t("login.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
                 autoFocus
-                placeholder="you@example.com"
+                placeholder={t("login.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <Input
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                placeholder="••••••••"
+                placeholder={t("login.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -86,7 +88,7 @@ export function Login() {
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              Sign in
+              {t("common.signIn")}
             </Button>
           </form>
         </CardContent>

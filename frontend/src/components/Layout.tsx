@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   BarChart3,
   Brush,
+  Globe,
   Home,
   LayoutDashboard,
   ListChecks,
@@ -17,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { endpoints, HealthResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 type NavItem = {
   to: string;
@@ -26,20 +29,21 @@ type NavItem = {
   adminOnly?: boolean;
 };
 
-const nav: NavItem[] = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, adminOnly: true },
-  { to: "/admin/jobs", label: "Jobs", icon: ListChecks },
-  { to: "/admin/draw", label: "Draw", icon: Brush },
-  { to: "/admin/test", label: "Test print", icon: TestTube2, adminOnly: true },
-  { to: "/admin/settings", label: "Settings", icon: SettingsIcon, adminOnly: true },
-];
-
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const { me, loading: authLoading, signOut } = useAuth();
   const [health, setHealth] = useState<HealthResponse | null>(null);
+
+  const nav: NavItem[] = [
+    { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, end: true },
+    { to: "/admin/analytics", label: t("nav.analytics"), icon: BarChart3, adminOnly: true },
+    { to: "/admin/jobs", label: t("nav.jobs"), icon: ListChecks },
+    { to: "/admin/draw", label: t("nav.draw"), icon: Brush },
+    { to: "/admin/test", label: t("nav.testPrint"), icon: TestTube2, adminOnly: true },
+    { to: "/admin/settings", label: t("nav.settings"), icon: SettingsIcon, adminOnly: true },
+  ];
   const visibleNav = nav.filter((item) => !item.adminOnly || me?.role === "admin");
 
   useEffect(() => {
@@ -61,6 +65,8 @@ export function Layout() {
       clearInterval(id);
     };
   }, [navigate, location.pathname, authLoading, me]);
+
+  const currentLang = (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -89,7 +95,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t p-3 space-y-1">
+        <div className="border-t p-3 space-y-2">
           {me ? (
             <div
               className="px-3 pb-1 text-xs text-muted-foreground truncate"
@@ -98,13 +104,28 @@ export function Layout() {
               {me.email}
             </div>
           ) : null}
+          <div className="flex items-center gap-2 px-1">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <select
+              aria-label={t("common.language")}
+              value={currentLang}
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+            >
+              {SUPPORTED_LANGUAGES.map((lng) => (
+                <option key={lng} value={lng}>
+                  {t(`languages.${lng}`)}
+                </option>
+              ))}
+            </select>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             className="w-full justify-start"
             onClick={() => navigate("/")}
           >
-            <Home className="mr-2 h-4 w-4" /> Public page
+            <Home className="mr-2 h-4 w-4" /> {t("nav.publicPage")}
           </Button>
           <Button
             variant="ghost"
@@ -115,7 +136,7 @@ export function Layout() {
               navigate("/", { replace: true });
             }}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
+            <LogOut className="mr-2 h-4 w-4" /> {t("common.signOut")}
           </Button>
         </div>
       </aside>
@@ -124,15 +145,15 @@ export function Layout() {
         <header className="flex h-16 items-center justify-between border-b bg-background px-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Activity className="h-4 w-4" />
-            <span>Printer</span>
+            <span>{t("header.printer")}</span>
             <span className="font-mono text-foreground">
-              {health?.printer?.host || "unknown"}:{health?.printer?.port || "—"}
+              {health?.printer?.host || t("header.unknown")}:{health?.printer?.port || t("common.dash")}
             </span>
             {health ? (
               health.printer.reachable ? (
-                <Badge variant="success">reachable</Badge>
+                <Badge variant="success">{t("header.reachable")}</Badge>
               ) : (
-                <Badge variant="destructive">unreachable</Badge>
+                <Badge variant="destructive">{t("header.unreachable")}</Badge>
               )
             ) : (
               <Badge variant="outline">…</Badge>
