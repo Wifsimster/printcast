@@ -44,6 +44,7 @@ interface Form {
   printer_retries: number;
   tz: string;
   printer_token: string;
+  admin_username: string;
 }
 
 const initialForm: Form = {
@@ -54,6 +55,7 @@ const initialForm: Form = {
   printer_retries: 3,
   tz: "Europe/Paris",
   printer_token: "",
+  admin_username: "admin",
 };
 
 const stepTitles = [
@@ -400,7 +402,8 @@ function AuthStep({
     }
   }
 
-  const tokenOk = form.printer_token.length >= 24;
+  const tokenOk =
+    form.printer_token.length >= 24 && form.admin_username.trim().length > 0;
 
   return (
     <>
@@ -420,6 +423,20 @@ function AuthStep({
             ntfy. You can rotate it later from settings.
           </AlertDescription>
         </Alert>
+        <div className="space-y-2">
+          <Label htmlFor="admin_username">Admin username</Label>
+          <Input
+            id="admin_username"
+            type="text"
+            placeholder="admin"
+            value={form.admin_username}
+            onChange={(e) => update("admin_username", e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            This first user holds the <span className="font-mono">admin</span>{" "}
+            role and can access settings, analytics, and test print.
+          </p>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="token">Bearer token</Label>
           <div className="flex gap-2">

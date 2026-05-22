@@ -113,6 +113,11 @@ export type TimeseriesResponse = {
   bucket_seconds: number;
 };
 
+export type Me = {
+  username: string;
+  role: "admin" | string;
+};
+
 export type PrinterCandidate = {
   host: string;
   port: number;
@@ -124,6 +129,7 @@ export type PrinterCandidate = {
 
 export const endpoints = {
   setupStatus: () => api<SetupStatus>("/api/setup/status", { auth: false }),
+  me: () => api<Me>("/api/me"),
   generateToken: () =>
     api<{ token: string }>("/api/setup/generate-token", { method: "POST" }),
   testConnection: (printer_host: string, printer_port: number) =>
