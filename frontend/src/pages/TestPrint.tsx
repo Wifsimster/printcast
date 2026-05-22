@@ -24,7 +24,7 @@ export function TestPrint() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Test print</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Test print</h1>
         <p className="text-sm text-muted-foreground">
           Send a manual print job to validate the bridge or to fire one-off receipts.
         </p>
@@ -39,10 +39,10 @@ export function TestPrint() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="quick">
-            <TabsList>
-              <TabsTrigger value="quick">Quick test</TabsTrigger>
-              <TabsTrigger value="text">Text</TabsTrigger>
-              <TabsTrigger value="receipt">Receipt</TabsTrigger>
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="quick" className="flex-1 sm:flex-none">Quick test</TabsTrigger>
+              <TabsTrigger value="text" className="flex-1 sm:flex-none">Text</TabsTrigger>
+              <TabsTrigger value="receipt" className="flex-1 sm:flex-none">Receipt</TabsTrigger>
             </TabsList>
             <TabsContent value="quick" className="mt-6">
               <QuickTest />
@@ -78,7 +78,7 @@ function QuickTest() {
       <p className="text-sm text-muted-foreground">
         Prints the same canary as the daily cron — accents, QR, and a timestamp.
       </p>
-      <Button onClick={run} disabled={busy}>
+      <Button onClick={run} disabled={busy} className="w-full sm:w-auto">
         {busy ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -123,7 +123,7 @@ function TextPrint() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Alignment</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(["left", "center", "right"] as const).map((a) => (
               <Button
                 key={a}
@@ -131,6 +131,7 @@ function TextPrint() {
                 variant={align === a ? "default" : "outline"}
                 onClick={() => setAlign(a)}
                 type="button"
+                className="flex-1 sm:flex-none"
               >
                 {a}
               </Button>
@@ -149,7 +150,7 @@ function TextPrint() {
           </Button>
         </div>
       </div>
-      <Button onClick={run} disabled={busy || !text.trim()}>
+      <Button onClick={run} disabled={busy || !text.trim()} className="w-full sm:w-auto">
         {busy ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -233,7 +234,7 @@ function ReceiptPrint() {
         />
         <Label htmlFor="ts">Print timestamp</Label>
       </div>
-      <Button onClick={run} disabled={busy}>
+      <Button onClick={run} disabled={busy} className="w-full sm:w-auto">
         {busy ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (

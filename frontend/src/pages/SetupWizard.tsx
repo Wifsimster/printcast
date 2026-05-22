@@ -95,28 +95,28 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 px-3 py-6 sm:px-4 sm:py-10">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Printer className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold">printcast setup</h1>
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold sm:text-xl">printcast setup</h1>
               <p className="text-sm text-muted-foreground">
                 First-run configuration wizard
               </p>
             </div>
           </div>
-          <Badge variant="outline">
+          <Badge variant="outline" className="shrink-0">
             Step {step + 1} of {stepTitles.length}
           </Badge>
         </header>
 
-        <div className="mb-8 space-y-2">
+        <div className="mb-6 space-y-2 sm:mb-8">
           <Progress value={progress} />
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="hidden justify-between text-xs text-muted-foreground sm:flex">
             {stepTitles.map((t, i) => (
               <span
                 key={t}
@@ -126,6 +126,12 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
               </span>
             ))}
           </div>
+          <p className="text-xs text-muted-foreground sm:hidden">
+            <span className="font-medium text-foreground">{stepTitles[step]}</span>
+            {step < stepTitles.length - 1 && (
+              <> &middot; next: {stepTitles[step + 1]}</>
+            )}
+          </p>
         </div>
 
         <Card>
@@ -274,7 +280,7 @@ function PrinterStep({
           </p>
         </div>
       </CardContent>
-      <CardFooter className="justify-between">
+      <CardFooter className="flex-wrap justify-between gap-2">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
@@ -343,14 +349,14 @@ function AuthStep({
         </Alert>
         <div className="space-y-2">
           <Label htmlFor="token">Bearer token</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Input
               id="token"
               type="text"
               placeholder="hex…"
               value={form.printer_token}
               onChange={(e) => update("printer_token", e.target.value)}
-              className="font-mono text-xs"
+              className="min-w-0 flex-1 font-mono text-xs"
             />
             <Button
               variant="outline"
@@ -358,10 +364,16 @@ function AuthStep({
               onClick={copy}
               disabled={!form.printer_token}
               title="Copy"
+              className="shrink-0"
             >
               <ClipboardCopy className="h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={gen} disabled={generating}>
+            <Button
+              variant="outline"
+              onClick={gen}
+              disabled={generating}
+              className="shrink-0"
+            >
               {generating ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -375,7 +387,7 @@ function AuthStep({
           </p>
         </div>
       </CardContent>
-      <CardFooter className="justify-between">
+      <CardFooter className="flex-wrap justify-between gap-2">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
@@ -479,7 +491,7 @@ function VerifyStep({
           Re-run probe
         </Button>
       </CardContent>
-      <CardFooter className="justify-between">
+      <CardFooter className="flex-wrap justify-between gap-2">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
@@ -529,7 +541,7 @@ function DoneStep({
           />
         </dl>
       </CardContent>
-      <CardFooter className="justify-between">
+      <CardFooter className="flex-wrap justify-between gap-2">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>

@@ -51,36 +51,40 @@ export function Jobs() {
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Job history</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Job history</h1>
           <p className="text-sm text-muted-foreground">
             Last 200 print jobs recorded in the local SQLite store.
           </p>
         </div>
-        <Button variant="outline" onClick={load}>
+        <Button variant="outline" onClick={load} className="w-full sm:w-auto">
           <RefreshCw className="mr-2 h-4 w-4" /> Refresh
         </Button>
       </header>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
+        <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <CardTitle>Print jobs</CardTitle>
             <CardDescription>
               Newest first. Source includes client IP and a truncated User-Agent.
             </CardDescription>
           </div>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="success">Success</TabsTrigger>
-              <TabsTrigger value="error">Error</TabsTrigger>
+          <Tabs
+            value={filter}
+            onValueChange={(v) => setFilter(v as Filter)}
+            className="w-full sm:w-auto"
+          >
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="all" className="flex-1 sm:flex-none">All</TabsTrigger>
+              <TabsTrigger value="success" className="flex-1 sm:flex-none">Success</TabsTrigger>
+              <TabsTrigger value="error" className="flex-1 sm:flex-none">Error</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 sm:px-6">
           {loading ? (
-            <div className="space-y-2">
+            <div className="space-y-2 px-6 sm:px-0">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
@@ -90,6 +94,7 @@ export function Jobs() {
               No jobs to show.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -128,6 +133,7 @@ export function Jobs() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

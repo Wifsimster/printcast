@@ -112,7 +112,7 @@ export function Settings() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Settings</h1>
         <p className="text-sm text-muted-foreground">
           Live configuration — persisted to /app/data/config.json. Takes effect
           on the next print job, no restart required.
@@ -191,8 +191,8 @@ export function Settings() {
                 onChange={(e) => setForm({ ...form, tz: e.target.value })}
               />
             </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={busy}>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button type="submit" disabled={busy} className="w-full sm:w-auto">
                 {busy ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -205,6 +205,7 @@ export function Settings() {
                 variant="outline"
                 onClick={testConnection}
                 disabled={testing}
+                className="w-full sm:w-auto"
               >
                 {testing ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -227,12 +228,12 @@ export function Settings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3">
-            <div className="text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 p-3">
+            <div className="min-w-0 text-sm">
               <span className="text-muted-foreground">Current: </span>
-              <span className="font-mono">{config.token_preview || "—"}</span>
+              <span className="font-mono break-all">{config.token_preview || "—"}</span>
             </div>
-            <Badge variant={config.token_set ? "success" : "destructive"}>
+            <Badge variant={config.token_set ? "success" : "destructive"} className="shrink-0">
               {config.token_set ? "configured" : "missing"}
             </Badge>
           </div>
@@ -245,8 +246,13 @@ export function Settings() {
             </Alert>
           )}
           <Separator />
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={rotate} disabled={busy}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              variant="outline"
+              onClick={rotate}
+              disabled={busy}
+              className="w-full sm:w-auto"
+            >
               <RefreshCw className="mr-2 h-4 w-4" /> Generate new token
             </Button>
             {token && (
@@ -257,10 +263,15 @@ export function Settings() {
                     navigator.clipboard.writeText(token);
                     toast.success("Copied");
                   }}
+                  className="w-full sm:w-auto"
                 >
                   <ClipboardCopy className="mr-2 h-4 w-4" /> Copy
                 </Button>
-                <Button onClick={applyToken} disabled={busy}>
+                <Button
+                  onClick={applyToken}
+                  disabled={busy}
+                  className="w-full sm:w-auto"
+                >
                   Apply token
                 </Button>
               </>

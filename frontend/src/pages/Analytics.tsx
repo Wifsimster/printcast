@@ -95,28 +95,32 @@ export function Analytics() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Analytics</h1>
         <p className="text-sm text-muted-foreground">
           Print job throughput, type breakdown, and success-rate trends.
         </p>
       </header>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
+        <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <CardTitle>Jobs over time</CardTitle>
             <CardDescription>Hourly buckets up to 48 h; daily after.</CardDescription>
           </div>
-          <Tabs value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
-            <TabsList>
-              <TabsTrigger value="24">24 h</TabsTrigger>
-              <TabsTrigger value="48">48 h</TabsTrigger>
-              <TabsTrigger value="168">7 d</TabsTrigger>
-              <TabsTrigger value="720">30 d</TabsTrigger>
+          <Tabs
+            value={String(hours)}
+            onValueChange={(v) => setHours(Number(v))}
+            className="w-full sm:w-auto"
+          >
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="24" className="flex-1 sm:flex-none">24 h</TabsTrigger>
+              <TabsTrigger value="48" className="flex-1 sm:flex-none">48 h</TabsTrigger>
+              <TabsTrigger value="168" className="flex-1 sm:flex-none">7 d</TabsTrigger>
+              <TabsTrigger value="720" className="flex-1 sm:flex-none">30 d</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
-        <CardContent className="h-72">
+        <CardContent className="h-56 sm:h-72">
           {loading ? (
             <Skeleton className="h-full w-full" />
           ) : (
@@ -171,7 +175,7 @@ export function Analytics() {
               Volume per endpoint over the last week.
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-64">
+          <CardContent className="h-56 sm:h-64">
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : byTypeData.length === 0 ? (
@@ -205,7 +209,7 @@ export function Analytics() {
               Lifetime success vs. error split.
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-64">
+          <CardContent className="h-56 sm:h-64">
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : pieData.every((d) => d.value === 0) ? (
