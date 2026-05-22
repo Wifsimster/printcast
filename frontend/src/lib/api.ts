@@ -118,6 +118,15 @@ export type Me = {
   role: "admin" | string;
 };
 
+export type PrinterCandidate = {
+  host: string;
+  port: number;
+  name?: string;
+  service?: string;
+  method: "mdns" | "scan";
+  reachable: boolean;
+};
+
 export const endpoints = {
   setupStatus: () => api<SetupStatus>("/api/setup/status", { auth: false }),
   me: () => api<Me>("/api/me"),
@@ -127,6 +136,11 @@ export const endpoints = {
     api<{ reachable: boolean; host: string; port: number }>(
       "/api/setup/test-connection",
       { method: "POST", body: JSON.stringify({ printer_host, printer_port }) }
+    ),
+  discoverPrinters: () =>
+    api<{ port: number; candidates: PrinterCandidate[] }>(
+      "/api/setup/discover",
+      { method: "POST" }
     ),
   completeSetup: (payload: Record<string, unknown>) =>
     api<{ status: string; config: ConfigResponse }>("/api/setup/complete", {
@@ -158,6 +172,11 @@ export const endpoints = {
     }),
   printReceipt: (payload: Record<string, unknown>) =>
     api<{ status: string }>("/print/receipt", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  printImage: (payload: Record<string, unknown>) =>
+    api<{ status: string }>("/print/image", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

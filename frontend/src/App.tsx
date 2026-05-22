@@ -9,6 +9,7 @@ import { Analytics } from "@/pages/Analytics";
 import { Jobs } from "@/pages/Jobs";
 import { Settings } from "@/pages/Settings";
 import { TestPrint } from "@/pages/TestPrint";
+import { Draw } from "@/pages/Draw";
 import { Login } from "@/pages/Login";
 import { SetupWizard } from "@/pages/SetupWizard";
 
@@ -48,6 +49,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/draw" element={<Draw />} />
           <Route
             path="/analytics"
             element={

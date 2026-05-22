@@ -20,7 +20,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional
 from zoneinfo import ZoneInfo
@@ -435,6 +435,7 @@ class SetupPayload(BaseModel):
     printer_timeout: int = 20
     printer_retries: int = 3
     tz: str = "Europe/Paris"
+    admin_username: str = "admin"
 
 
 class ConfigUpdate(BaseModel):
@@ -764,6 +765,16 @@ def test_connection(payload: TestConnectionPayload,
     return {"reachable": reachable, "host": payload.printer_host, "port": payload.printer_port}
 
 
+@app.post("/api/setup/discover")
+def setup_discover(_: None = Depends(_admin_required_when_setup)) -> dict:
+    """Run printer auto-discovery during first-run setup (no token required)."""
+    port = int(CONFIG.get("printer_port") or 9100)
+    candidates = discover_printers(port=port, mdns_timeout=3.0, scan_timeout=0.4)
+    for c in candidates:
+        c["reachable"] = tcp_reachable(c["host"], c["port"], timeout=1.5)
+    return {"port": port, "candidates": candidates}
+
+
 @app.post("/api/setup/complete")
 def setup_complete(payload: SetupPayload,
                    _: None = Depends(_admin_required_when_setup)) -> dict:
@@ -775,9 +786,13 @@ def setup_complete(payload: SetupPayload,
         CONFIG["printer_timeout"] = max(1, int(payload.printer_timeout))
         CONFIG["printer_retries"] = max(1, int(payload.printer_retries))
         CONFIG["tz"] = payload.tz.strip() or "Europe/Paris"
+        # The first user (created here by the setup wizard) is the admin.
+        CONFIG["admin_username"] = payload.admin_username.strip() or "admin"
+        CONFIG["admin_role"] = "admin"
         CONFIG["setup_completed"] = True
         _save_persisted_config()
-    log("setup.completed", host=CONFIG["printer_host"], port=CONFIG["printer_port"])
+    log("setup.completed", host=CONFIG["printer_host"], port=CONFIG["printer_port"],
+        admin_username=CONFIG["admin_username"])
     return {"status": "ok", "config": _public_config()}
 
 
