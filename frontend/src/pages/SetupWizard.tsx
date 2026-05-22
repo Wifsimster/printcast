@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ClipboardCopy,
+  ExternalLink,
   Globe,
   KeyRound,
   Loader2,
@@ -38,6 +39,13 @@ import { cn } from "@/lib/utils";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 type Step = 0 | 1 | 2 | 3 | 4;
+
+function openPrinterWebUI(host: string) {
+  const trimmed = host.trim();
+  if (!trimmed) return;
+  const url = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}/`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
 interface Form {
   printer_host: string;
@@ -316,12 +324,24 @@ function PrinterStep({
         <div className="grid gap-4 sm:grid-cols-[2fr,1fr]">
           <div className="space-y-2">
             <Label htmlFor="host">{t("settings.host")}</Label>
-            <Input
-              id="host"
-              placeholder="192.168.30.40"
-              value={form.printer_host}
-              onChange={(e) => update("printer_host", e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="host"
+                placeholder="192.168.30.40"
+                value={form.printer_host}
+                onChange={(e) => update("printer_host", e.target.value)}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => openPrinterWebUI(form.printer_host)}
+                disabled={!form.printer_host.trim()}
+                title={t("setup.openPrinterWebUI")}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("setup.openPrinterWebUIHint")}</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="port">{t("settings.port")}</Label>
@@ -611,14 +631,24 @@ function VerifyStep({
             <AlertDescription>{t("setup.cannotReachDesc")}</AlertDescription>
           </Alert>
         )}
-        <Button variant="outline" onClick={check} disabled={checking}>
-          {checking ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <TestTube2 className="mr-2 h-4 w-4" />
-          )}
-          {t("setup.rerunProbe")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={check} disabled={checking}>
+            {checking ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <TestTube2 className="mr-2 h-4 w-4" />
+            )}
+            {t("setup.rerunProbe")}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => openPrinterWebUI(form.printer_host)}
+            disabled={!form.printer_host.trim()}
+          >
+            <ExternalLink className="mr-2 h-4 w-4" />
+            {t("setup.openPrinterWebUI")}
+          </Button>
+        </div>
       </CardContent>
       <CardFooter className="justify-between">
         <Button variant="outline" onClick={onBack}>

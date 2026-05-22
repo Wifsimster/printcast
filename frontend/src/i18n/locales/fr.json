@@ -257,6 +257,8 @@
     "cannotReachTitle": "Impossible de joindre l'imprimante",
     "cannotReachDesc": "Vous pouvez quand même enregistrer et terminer l'installation. Le service réessaiera à chaque requête d'impression. Vérifiez l'hôte/port et les restrictions de pare-feu ou VLAN sur le port 9100.",
     "rerunProbe": "Relancer la sonde",
+    "openPrinterWebUI": "Ouvrir l'interface web de l'imprimante",
+    "openPrinterWebUIHint": "Utilisez l'icône d'ouverture pour charger l'interface web du fabricant dans un nouvel onglet (port 80) — pratique pour trouver ou changer l'IP.",
     "doneTitle": "Prêt à imprimer",
     "doneDesc": "Vérifiez le résumé puis enregistrez la configuration. Le service la stocke dans /app/data et l'applique immédiatement — sans redémarrage.",
     "summaryPrinter": "Imprimante",

@@ -257,6 +257,8 @@
     "cannotReachTitle": "Drucker nicht erreichbar",
     "cannotReachDesc": "Sie können dennoch speichern und die Einrichtung abschließen. Der Dienst versucht es bei jeder Anfrage erneut. Prüfen Sie Host/Port und Firewall- oder VLAN-Beschränkungen auf Port 9100.",
     "rerunProbe": "Probe erneut ausführen",
+    "openPrinterWebUI": "Drucker-Weboberfläche öffnen",
+    "openPrinterWebUIHint": "Über das Öffnen-Symbol wird die Weboberfläche des Druckerherstellers in einem neuen Tab geladen (Port 80) — praktisch, um die IP zu finden oder zu ändern.",
     "doneTitle": "Bereit zum Drucken",
     "doneDesc": "Überprüfen Sie die Zusammenfassung und speichern Sie die Konfiguration. Der Dienst legt sie unter /app/data ab und wendet sie sofort an — kein Neustart nötig.",
     "summaryPrinter": "Drucker",

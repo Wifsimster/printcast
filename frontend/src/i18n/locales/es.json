@@ -257,6 +257,8 @@
     "cannotReachTitle": "No se puede alcanzar la impresora",
     "cannotReachDesc": "Aún puede guardar y terminar la instalación. El servicio seguirá reintentando con cada petición de impresión. Verifique host/puerto y las restricciones de cortafuegos o VLAN en el puerto 9100.",
     "rerunProbe": "Reejecutar sonda",
+    "openPrinterWebUI": "Abrir interfaz web de la impresora",
+    "openPrinterWebUIHint": "Use el icono de apertura para cargar la interfaz web del fabricante en una nueva pestaña (puerto 80) — útil para encontrar o cambiar la IP.",
     "doneTitle": "Listo para imprimir",
     "doneDesc": "Revise el resumen y guarde la configuración. El servicio la almacena en /app/data y la aplica de inmediato — sin reinicio.",
     "summaryPrinter": "Impresora",
