@@ -84,6 +84,7 @@ CONFIG: dict[str, Any] = {
     "printer_timeout": _int_env("PRINTER_TIMEOUT", 20),
     "printer_retries": max(1, _int_env("PRINTER_RETRIES", 3)),
     "tz": os.environ.get("TZ", "Europe/Paris"),
+    "public_print_enabled": _bool_env("PUBLIC_PRINT_ENABLED", True),
     "setup_completed": False,
 }
 CONFIG_LOCK = threading.Lock()
@@ -442,6 +443,18 @@ class ConfigUpdate(BaseModel):
     printer_timeout: Optional[int] = None
     printer_retries: Optional[int] = None
     tz: Optional[str] = None
+    public_print_enabled: Optional[bool] = None
+
+
+class PublicPrintJob(BaseModel):
+    """A message submitted from the unauthenticated public print page.
+
+    The free-text `username` identifies the sender and is both printed on the
+    receipt header and recorded as the job source so the owner knows who sent
+    each message.
+    """
+    username: str = Field(min_length=1, max_length=32)
+    message: str = Field(min_length=1, max_length=500)
 
 
 class TestConnectionPayload(BaseModel):
@@ -710,6 +723,33 @@ def print_test(request: Request, _: None = Depends(require_auth)) -> dict:
     return {"status": "printed", "job": "test"}
 
 
+@app.post("/api/public/print")
+def public_print(job: PublicPrintJob, request: Request) -> dict:
+    """Unauthenticated print from the public page — anyone can send a short
+    message after entering a free-text username. Gated by `public_print_enabled`
+    so the owner can close the surface without a redeploy."""
+    if not CONFIG.get("public_print_enabled", True):
+        raise HTTPException(status_code=403, detail="public printing is disabled")
+    username = job.username.strip()
+    message = job.message.strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="username is required")
+    if not message:
+        raise HTTPException(status_code=400, detail="message is required")
+    receipt = ReceiptJob(
+        title="MESSAGE",
+        subtitle=f"De {username}",
+        lines=message.split("\n"),
+        timestamp=True,
+    )
+    ip = request.client.host if request.client else "?"
+    run_print_job("public", lambda p: render_receipt(p, receipt),
+                  source=f"{username} ({ip})",
+                  summary=f"username={username}, message={_short(message)}")
+    log("print.public", username=username, ip=ip)
+    return {"status": "printed", "job": "public", "username": username}
+
+
 # --------------------------------------------------------------------------
 # Admin / wizard / analytics API
 # --------------------------------------------------------------------------
@@ -722,6 +762,7 @@ def _public_config() -> dict[str, Any]:
         "printer_timeout": int(CONFIG["printer_timeout"]),
         "printer_retries": int(CONFIG["printer_retries"]),
         "tz": CONFIG["tz"],
+        "public_print_enabled": bool(CONFIG.get("public_print_enabled", True)),
         "setup_completed": bool(CONFIG.get("setup_completed")),
         "token_set": bool(token),
         "token_preview": (token[:4] + "…" + token[-4:]) if len(token) >= 12 else ("set" if token else ""),
@@ -734,6 +775,7 @@ def setup_status() -> dict:
         "setup_completed": bool(CONFIG.get("setup_completed")),
         "has_token": bool(CONFIG.get("printer_token")),
         "has_host": bool(CONFIG.get("printer_host")),
+        "public_print_enabled": bool(CONFIG.get("public_print_enabled", True)),
     }
 
 

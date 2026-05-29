@@ -64,6 +64,7 @@ export type SetupStatus = {
   setup_completed: boolean;
   has_token: boolean;
   has_host: boolean;
+  public_print_enabled?: boolean;
 };
 
 export type HealthResponse = {
@@ -79,6 +80,7 @@ export type ConfigResponse = {
   printer_timeout: number;
   printer_retries: number;
   tz: string;
+  public_print_enabled: boolean;
   setup_completed: boolean;
   token_set: boolean;
   token_preview: string;
@@ -154,5 +156,11 @@ export const endpoints = {
     api<{ status: string }>("/print/receipt", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  publicPrint: (username: string, message: string) =>
+    api<{ status: string; username: string }>("/api/public/print", {
+      auth: false,
+      method: "POST",
+      body: JSON.stringify({ username, message }),
     }),
 };

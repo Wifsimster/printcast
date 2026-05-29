@@ -268,6 +268,45 @@ export function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Public print page</CardTitle>
+          <CardDescription>
+            An unauthenticated page at{" "}
+            <a href="/p" target="_blank" rel="noreferrer" className="font-mono underline">
+              /p
+            </a>{" "}
+            where anyone can enter a username and send a short message to the
+            printer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={save} className="space-y-4">
+            <div className="flex items-center gap-2">
+              <input
+                id="public_print_enabled"
+                type="checkbox"
+                checked={form.public_print_enabled ?? true}
+                onChange={(e) =>
+                  setForm({ ...form, public_print_enabled: e.target.checked })
+                }
+              />
+              <Label htmlFor="public_print_enabled">
+                Allow public submissions
+              </Label>
+            </div>
+            <Button type="submit" disabled={busy}>
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save changes
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

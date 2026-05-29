@@ -35,6 +35,7 @@ All configuration is through environment variables (see `.env.example`):
 | `PRINTER_TOKEN`      | yes      | —                | Bearer token for `/print*` endpoints                          |
 | `PRINTER_TIMEOUT`    | no       | `20`             | Per-job socket timeout (seconds)                              |
 | `PRINTER_RETRIES`    | no       | `3`              | Attempts per job                                              |
+| `PUBLIC_PRINT_ENABLED` | no     | `true`           | Allow unauthenticated submissions on the public print page    |
 | `TZ`                 | no       | `Europe/Paris`   | Timezone for printed timestamps                               |
 
 ¹ If `PRINTER_HOST` is unset, the service auto-detects on startup: mDNS first
@@ -77,6 +78,7 @@ The same container that serves the API also serves the bundled React UI on
 | `/jobs`        | Last 200 jobs with status, duration, source.           |
 | `/test`        | Compose ad-hoc text/receipt prints from the browser.   |
 | `/settings`    | Edit printer config and rotate the bearer token.       |
+| `/p`           | **Public** print page — no token. A visitor enters a free-text username and a short message, and it prints. Toggle in `/settings`. |
 
 After setup, the dashboard requires the bearer token (the same one the
 `/print*` endpoints accept) — paste it at `/login`. The token is stored in
@@ -102,7 +104,8 @@ bearer token:
 Authorization: Bearer <PRINTER_TOKEN>
 ```
 
-`/health`, `/metrics`, and `/api/setup/status` are unauthenticated. Before the
+`/health`, `/metrics`, `/api/setup/status`, and `/api/public/print` are
+unauthenticated. Before the
 setup wizard is completed, `/api/setup/*` is also unauthenticated so the UI can
 bootstrap. On a printer failure the `/print*` endpoints return HTTP `502`; bad
 input returns `400`; a missing/invalid token returns `401`.
@@ -238,6 +241,21 @@ Daily 09:00 cron entry on the Docker host:
 0 9 * * * curl -fsS -X POST https://printcast.battistella.ovh/print/test \
   -H "Authorization: Bearer $PRINTER_TOKEN" >/dev/null
 ```
+
+### `POST /api/public/print` — no auth
+
+Backs the public `/p` page. A visitor supplies a free-text `username` and a
+short `message`; the service prints a small receipt headed `De <username>` and
+records the job (source = `username (ip)`) so it shows up in `/jobs`. Returns
+`403` when `PUBLIC_PRINT_ENABLED` is off, `422`/`400` on bad input.
+
+```sh
+curl -X POST https://printcast.battistella.ovh/api/public/print \
+  -H "Content-Type: application/json" \
+  -d '{"username":"Alex","message":"Coucou depuis la page publique !"}'
+```
+
+`username` is capped at 32 characters and `message` at 500.
 
 ## Integrations
 

@@ -9,6 +9,7 @@ import { Jobs } from "@/pages/Jobs";
 import { Settings } from "@/pages/Settings";
 import { TestPrint } from "@/pages/TestPrint";
 import { Login } from "@/pages/Login";
+import { PublicPrint } from "@/pages/PublicPrint";
 import { SetupWizard } from "@/pages/SetupWizard";
 
 export default function App() {
@@ -43,6 +44,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/p" element={<PublicPrint />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/analytics" element={<Analytics />} />
