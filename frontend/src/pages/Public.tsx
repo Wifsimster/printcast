@@ -24,11 +24,11 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, endpoints } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { PublicUsernameProvider } from "@/lib/publicUser";
 import {
-  PublicUsernameProvider,
   usePublicUsername,
   USERNAME_MAX_LENGTH,
-} from "@/lib/publicUser";
+} from "@/lib/publicUsername";
 import { cn } from "@/lib/utils";
 import { AppFooter } from "@/components/AppFooter";
 import { PublicQR } from "@/components/public/PublicQR";
@@ -49,8 +49,8 @@ export function Public() {
     <div className="app-shell-bg flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b border-border/60 bg-background/70 px-3 backdrop-blur md:h-16 md:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-info text-primary-foreground shadow-soft">
-            <Printer className="h-4 w-4" />
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-info text-primary-foreground shadow-soft">
+            <Printer className="size-4" />
           </div>
           <span className="truncate text-base font-semibold tracking-tight">printcast</span>
         </div>
@@ -64,7 +64,7 @@ export function Public() {
             className={cn("shrink-0", signedIn && "shadow-soft")}
             aria-label={signedIn ? t("public.adminConsole") : t("public.adminLogin")}
           >
-            <ShieldCheck className="h-4 w-4 sm:mr-2" />
+            <ShieldCheck className="size-4 sm:mr-2" />
             <span className="hidden sm:inline">
               {signedIn ? t("public.adminConsole") : t("public.adminLogin")}
             </span>
@@ -145,7 +145,7 @@ function UsernameField() {
             onClick={randomize}
             className="w-full sm:w-auto"
           >
-            <Dices className="mr-2 h-4 w-4" />
+            <Dices className="mr-2 size-4" />
             {t("public.usernameRandom")}
           </Button>
         </div>
@@ -231,9 +231,9 @@ function PublicText() {
       </div>
       <Button onClick={run} disabled={busy || !text.trim()} className="w-full sm:w-auto">
         {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 size-4 animate-spin" />
         ) : (
-          <Send className="mr-2 h-4 w-4" />
+          <Send className="mr-2 size-4" />
         )}
         {t("public.print")}
       </Button>
@@ -355,9 +355,9 @@ function PublicDraw() {
           className="w-full sm:w-auto"
         >
           {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" />
           ) : (
-            <Send className="mr-2 h-4 w-4" />
+            <Send className="mr-2 size-4" />
           )}
           {t("public.printDrawing")}
         </Button>
@@ -367,7 +367,7 @@ function PublicDraw() {
           disabled={busy}
           className="w-full sm:w-auto"
         >
-          <Eraser className="mr-2 h-4 w-4" /> {t("public.clear")}
+          <Eraser className="mr-2 size-4" /> {t("public.clear")}
         </Button>
       </div>
     </div>
