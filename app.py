@@ -1291,6 +1291,7 @@ def setup_discover(_: None = Depends(_admin_required_when_setup)) -> dict:
 @app.post("/api/setup/complete")
 def setup_complete(payload: SetupPayload,
                    _: None = Depends(_admin_required_when_setup)) -> dict:
+    global PRINTER_DISCOVERY
     # Create the first user in the auth sidecar BEFORE persisting setup state,
     # so a sidecar failure doesn't leave the deploy half-configured.
     try:
@@ -1325,6 +1326,9 @@ def setup_complete(payload: SetupPayload,
         CONFIG["printer_retries"] = max(1, int(payload.printer_retries))
         CONFIG["tz"] = payload.tz.strip() or "Europe/Paris"
         CONFIG["setup_completed"] = True
+        # Manual setup supersedes auto-discovery, so /health stops claiming
+        # the host was found via mDNS/scan.
+        PRINTER_DISCOVERY = None
         _save_persisted_config()
     log("setup.completed",
         host=CONFIG["printer_host"], port=CONFIG["printer_port"],
@@ -1344,6 +1348,7 @@ def get_config(_: dict = Depends(require_admin)) -> dict:
 
 @app.put("/api/config")
 def update_config(payload: ConfigUpdate, _: dict = Depends(require_admin)) -> dict:
+    global PRINTER_DISCOVERY
     with CONFIG_LOCK:
         data = payload.model_dump(exclude_none=True)
         for key, value in data.items():
@@ -1360,6 +1365,8 @@ def update_config(payload: ConfigUpdate, _: dict = Depends(require_admin)) -> di
             elif key == "queue_enabled":
                 value = bool(value)
             CONFIG[key] = value
+        if "printer_host" in data or "printer_port" in data:
+            PRINTER_DISCOVERY = None
         _save_persisted_config()
     log("config.updated", changed=list(data.keys()))
     return {"status": "ok", "config": _public_config()}
@@ -1534,6 +1541,10 @@ async def auth_proxy(path: str, request: Request) -> Response:
 INDEX_HTML = FRONTEND_DIR / "index.html"
 
 
+_SPA_RESERVED_PREFIXES = ("api/", "print/", "assets/")
+_SPA_RESERVED_EXACT = {"print", "health", "metrics", "discover"}
+
+
 def _mount_frontend() -> None:
     if not FRONTEND_DIR.exists() or not INDEX_HTML.exists():
         log("frontend.missing", level=logging.WARNING, path=str(FRONTEND_DIR))
@@ -1541,6 +1552,7 @@ def _mount_frontend() -> None:
     assets = FRONTEND_DIR / "assets"
     if assets.exists():
         app.mount("/assets", StaticFiles(directory=str(assets)), name="assets")
+    safe_root = FRONTEND_DIR.resolve()
 
     @app.get("/")
     def _root() -> FileResponse:
@@ -1548,9 +1560,18 @@ def _mount_frontend() -> None:
 
     @app.get("/{full_path:path}")
     def _spa(full_path: str) -> FileResponse:
-        if full_path.startswith(("api/", "print", "health", "metrics", "assets/")):
+        if (full_path in _SPA_RESERVED_EXACT
+                or full_path.startswith(_SPA_RESERVED_PREFIXES)):
             raise HTTPException(status_code=404)
-        candidate = FRONTEND_DIR / full_path
+        # Resolve and confine to FRONTEND_DIR. FastAPI's `:path` converter
+        # passes URL-decoded segments through, so `%2e%2e/...` would otherwise
+        # let a client read files outside the bundle via `FRONTEND_DIR / x`.
+        try:
+            candidate = (FRONTEND_DIR / full_path).resolve()
+        except (OSError, RuntimeError):
+            return FileResponse(str(INDEX_HTML))
+        if candidate != safe_root and safe_root not in candidate.parents:
+            return FileResponse(str(INDEX_HTML))
         if candidate.is_file():
             return FileResponse(str(candidate))
         return FileResponse(str(INDEX_HTML))
