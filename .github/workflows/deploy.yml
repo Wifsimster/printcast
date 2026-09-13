@@ -29,6 +29,14 @@ jobs:
       run:
         working-directory: /opt/docker/printcast
     steps:
+      # The self-hosted runner shares one Docker credential store across every
+      # repo that deploys here. A sibling repo's workflow can leave its own
+      # short-lived, repo-scoped `ghs_` token in ~/.docker/config.json, and an
+      # anonymous-capable pull then fails with `error from registry: denied`.
+      # Authenticate with this repo's token, and always drop it again below.
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
       - name: Pull latest image(s)
         run: docker compose pull
 
@@ -41,3 +49,9 @@ jobs:
       - name: Prune dangling images
         working-directory: /
         run: docker image prune -f
+
+      # Never leave this run's repo-scoped token behind for the next repo.
+      - name: Log out of GHCR
+        if: always()
+        working-directory: /
+        run: docker logout ghcr.io
