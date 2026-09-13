@@ -1,0 +1,17 @@
+# Ruff has no pinned version in CI (`pip install ruff`), and its *default* rule
+# set grows with each release. On 2026-09-13, ruff 0.16.7 turned a previously
+# green pipeline red with 86 findings on code nobody had touched since June.
+#
+# Selecting the rules explicitly makes linting deterministic: CI now fails on
+# what we changed, not on what upstream decided to enable this month.
+#
+# Deliberately not enabled on this codebase:
+#   B008  - FastAPI's dependency injection is *built* on calls in argument
+#           defaults (`user = Depends(current_user)`); flagging it is noise.
+#   UP045 - `Optional[str]` vs `str | None` is a style preference, not a defect.
+#   BLE001- the print/discovery paths blanket-catch on purpose: a flaky printer
+#           must never take the request down.
+target-version = "py312"
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
